@@ -5,10 +5,10 @@ window.RitmHome = (() => {
   });
   const weekLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
   const words = {move:"тренировка", walk:"прогулка", food:"питание"};
-  const image = (name, className="") => '<img class="'+className+'" src="assets/home/'+name+'.webp" alt="" draggable="false">';
+  const image = (name, className="") => '<img class="'+className+'" src="assets/home/'+name+'.webp?v=system1" alt="" draggable="false">';
   const calendarDay = iso => new Date(iso+"T12:00:00Z");
   function week(s, weekly) {
-    if (!s.home_plan?.length) {
+    if (s.season || !s.home_plan?.length) {
       const w = weekly();
       return {percent:w.percent, caption:w.total+" из "+w.target+" дней по плану", days:w.days.map((date,i)=>({date,level:w.counts[i]?1:0}))};
     }
@@ -78,7 +78,7 @@ window.RitmHome = (() => {
     } else if(s.feed?.some(x=>x.person===s.profile.id)){
       title="Твоё дело в ленте круга.";status="Движение продолжается.";stamp="Круг";cmd="go:pulse";cta="В круг";
     }
-    return '<section class="home-pulse"><div class="pulse-stamp">'+I('zap',16)+'<span>PULSE / '+e(stamp)+'</span></div><h2>'+e(title)+'</h2><div class="pulse-foot"><span>'+status+'</span><button data-a="'+cmd+'">'+cta+' '+I('arrow-up-right',14)+'</button></div></section>';
+    return '<section class="home-pulse"><div class="pulse-stamp">'+RitmVisual.pulseTrace+I('zap',16)+'<span>PULSE / '+e(stamp)+'</span></div><h2>'+e(title)+'</h2><div class="pulse-foot"><span>'+status+'</span><button data-a="'+cmd+'">'+cta+' '+I('arrow-up-right',14)+'</button></div></section>';
   }
   function row(code,title,duration,img,link,{I,e}) {
     return '<button class="home-plan-row" data-a="'+link+'">'+image(img,"row-photo")+'<span class="row-text"><small>'+code+'</small><b>'+title+'</b><span>'+e(duration)+'</span></span>'+I("arrow-up-right",15)+'</button>';
@@ -87,7 +87,7 @@ window.RitmHome = (() => {
     const {time,dinner}=helpers;
     const date=calendarDay(s.day).toLocaleDateString('ru-RU',{weekday:'short',timeZone:'UTC'}).toUpperCase()+' / '+calendarDay(s.day).toLocaleDateString('ru-RU',{month:'short',day:'numeric',timeZone:'UTC'}).replace(/\.$/,'').toUpperCase();
     const foodTime=dinner?dinner.mins+' мин':'Выбрать продукты';
-    return '<div class="home-content"><div class="home-title"><time datetime="'+s.day+'">'+date+'</time><h1>В своём ритме.</h1></div>'+summary(s,helpers)+circle(s,helpers)+pulse(s,helpers)+'<section class="home-agenda"><h2>Сегодня</h2>'+row('01 / FOOD','Ужин по твоему плану',foodTime,'dinner','go:food',helpers)+row('02 / TRAIN','Сила и движение',time+' мин','training','go:train',helpers)+'</section></div>';
+    return '<div class="home-content"><div class="home-title"><time datetime="'+s.day+'">'+date+'</time><h1>В своём ритме.</h1></div>'+summary(s,helpers)+circle(s,helpers)+pulse(s,helpers)+'<section class="home-agenda"><div class="agenda-top"><h2>Сегодня</h2><button class="quick-time" data-a="quicktime" aria-label="Выбрать доступное время, '+time+' минут">'+helpers.I('clock',14)+' '+time+' мин '+helpers.I('chevron-down',13)+'</button></div>'+row('01 / FOOD','Ужин по твоему плану',foodTime,'dinner','go:food',helpers)+row('02 / TRAIN','Сила и движение',time+' мин','training','go:train',helpers)+'</section></div>';
   }
-  return {header,render,people,relative,week};
+  return {header,render,people,relative,week,ring,summary,pulse,portrait};
 })();

@@ -1,12 +1,13 @@
 'use strict';
 const previewQuery=new URLSearchParams(location.search);
 const homeScenario=previewQuery.get('screen')==='today'||previewQuery.get('scenario')==='home';
+if(homeScenario)document.querySelector('link[rel=manifest]').href='manifest-home.webmanifest?v=system1';
 const sandboxStorageKey=homeScenario?'ritm-home-review-actor':'ritm-preview-actor';
 if(previewQuery.get('screen')==='today'&&!previewQuery.has('as'))sessionStorage.setItem(sandboxStorageKey,'owner');
 const requested=new URLSearchParams(location.search).get('as');
 if(requested==='owner'||requested==='friend')sessionStorage.setItem(sandboxStorageKey,requested);
 const previewActor=sessionStorage.getItem(sandboxStorageKey)==='friend'?'friend':'owner';
-const previewWorker=new Worker('./worker.js?rev=home-1'+(homeScenario?'&scenario=home':''));
+const previewWorker=new Worker('./worker.js?rev=system1'+(homeScenario?'&scenario=home':''));
 const calls=new Map();let requestId=0,initialized=false;
 window.ritmDemo={
   actor:previewActor,

@@ -8,9 +8,9 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 OFFERS = {
-    'FOOD': ('Питание на 28 дней', 1490, 1),
-    'RESET': ('28 дней изменений', 1990, 1),
-    'DUO': ('Сезон для двоих', 2990, 2),
+    'FOOD': ('Питание на 28 дней', 2490, 1),
+    'RESET': ('28 дней изменений', 3490, 1),
+    'DUO': ('Сезон для двоих', 5490, 2),
 }
 FIELDS = {
     'focus': ['Регулярность тренировок', 'Стать сильнее', 'Питание в будни', 'Больше движения'],
@@ -49,7 +49,7 @@ def state(c,p,t):
     if b:
         url=os.getenv('RITM_'+b['sku']+'_CHECKOUT','').strip()
         link=urlsplit(url)
-        if link.scheme=='https' and link.hostname and not link.username and not link.password:
+        if b['price']==OFFERS[b['sku']][1] and link.scheme=='https' and link.hostname and not link.username and not link.password:
             result['booking']['checkout']=url
     if not row:return result
     plan=json.loads(row['plan']);focus=plan['focus']; start=row['started']

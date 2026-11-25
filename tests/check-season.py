@@ -21,9 +21,9 @@ t=1795639930
 for w in ('a','b','c'):op(w,'allocate',t,channel='direct')
 v=season.state(c,'a',t)['allocation'];op('a','allocate',t+1,channel='artem');assert season.state(c,'a',t)['allocation']==v
 op('a','exposure',t,step='offers');b=op('a','book',t+1,sku='DUO')['ref'];assert b==op('a','book',t+2,sku='DUO')['ref']
-err(lambda:op('a','book',t+3,sku='RESET'));sales.record(c,b,'demo','paid',299000,t+5,'artem');sales.record(c,b,'demo','paid',299000,t+5,'artem')
-sales.record(c,b,'ret','refund',100000,t+8,'artem');sales.record(c,b,'ret2','refund',199000,t+9,'artem');err(lambda:sales.record(c,b,'bad','refund',1,t+10,'artem'))
-for cut,expected in [(t+4,'1 1 0 0 0 0.0 0.0'),(t+6,'1 1 1 1 2 2990.0 2990.0'),(t+10,'1 1 1 0 0 0.0 0.0')]:
+err(lambda:op('a','book',t+3,sku='RESET'));sales.record(c,b,'demo','paid',549000,t+5,'artem');sales.record(c,b,'demo','paid',549000,t+5,'artem')
+sales.record(c,b,'ret','refund',100000,t+8,'artem');sales.record(c,b,'ret2','refund',449000,t+9,'artem');err(lambda:sales.record(c,b,'bad','refund',1,t+10,'artem'))
+for cut,expected in [(t+4,'1 1 0 0 0 0.0 0.0'),(t+6,'1 1 1 1 2 5490.0 5490.0'),(t+10,'1 1 1 0 0 0.0 0.0')]:
     with contextlib.redirect_stdout(io.StringIO()) as capture:sales.report(c,cut)
     assert expected in capture.getvalue(),capture.getvalue()
 plan={k:v[0] for k,v in season.FIELDS.items()};op('a','season',t,plan=plan,baseline=1,target=3)
@@ -46,3 +46,11 @@ assert aid not in str(server.snapshot(c,'b',nextday+5)['pulse'])
 op('b','leave',nextday+5,game=gid);assert not server.snapshot(c,'b',nextday+5)['games']
 err(lambda:done('b','food',nextday+6,game=gid,source=cid))
 print('OK • offers, payment attribution, refunds, personal goal, delayed outcome, 24h Pulse, distinct replies, privacy and exit')
+
+# A booking fixed before a price change remains payable and refundable at its original price.
+with c:
+    c.execute("INSERT INTO bookings VALUES(?,?,?,?,?,?)",('historic-food','b','FOOD',1490,1,t))
+sales.record(c,'historic-food','historic-pay','paid',149000,t+50,'direct')
+sales.record(c,'historic-food','historic-return','refund',149000,t+51,'direct')
+assert season.state(c,'b',t+52)['booking']['price']==1490
+assert [season.OFFERS[k][1] for k in ('FOOD','RESET','DUO')]==[2490,3490,5490]

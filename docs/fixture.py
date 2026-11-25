@@ -31,10 +31,11 @@ def seed(c,t):
         c.execute('INSERT INTO demo_fixture VALUES(2)')
         return
     for mode,members in [('circle',[(LENA,'walk'),(MAX,'food'),(MASHA,'move')]),('duel',[(LENA,'walk')])]:
-        gid=core.operate(c,OWNER,'create',dict(mode=mode,kind='move'),start)['game']
+        game_start=t-3*86400 if mode=='duel' else start
+        gid=core.operate(c,OWNER,'create',dict(mode=mode,kind='move'),game_start)['game']
         token=c.execute('SELECT token FROM games WHERE id=?',(gid,)).fetchone()[0]
         for i,(person,kind) in enumerate(members):
-            core.operate(c,person,'join',dict(token=token,kind=kind),start+i+1)
+            core.operate(c,person,'join',dict(token=token,kind=kind),game_start+i+1)
     schedule = [('move','food'),('walk','food'),('move','food'),('walk','food'),('move',),('walk',),('food',)]
     for index,kinds in enumerate(schedule):
         when=t-(6-index)*86400
@@ -42,6 +43,7 @@ def seed(c,t):
             c.execute('INSERT INTO demo_home_plan VALUES(?,?)',(str(core.day(when)),kind))
             if index<5:
                 mark(c,OWNER,kind,when,True)
+    mark(c,LENA,'walk',t-86400,True)
     mark(c,MAX,'food',t-3600,True)
     mark(c,LENA,'move',t-720,True)
     c.execute('INSERT INTO demo_fixture VALUES(2)')
