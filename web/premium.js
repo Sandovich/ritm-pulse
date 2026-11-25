@@ -35,6 +35,24 @@ const eventTime = stamp => S.server_time-stamp<86400?RitmHome.relative(stamp,S.s
 function homeHelpers() {
   return {I,e,demo,weekly,incoming,time,dinner:dishes().find(m=>m.type==='Ужин')};
 }
+const heartbeatPattern = [35, 85, 55];
+let nextHeartbeat = 0;
+function hapticsEnabled() {
+  return read('pulseHaptics') ?? !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function heartbeat() {
+  const now = performance.now();
+  if (document.hidden || now < nextHeartbeat) return;
+  nextHeartbeat = now + 240;
+  document.querySelector('#nav .pulse-nav')?.classList.add('heartbeat');
+  if (hapticsEnabled() && typeof navigator.vibrate === 'function') {
+    try { navigator.vibrate(heartbeatPattern); } catch { /* Some hosts block device vibration. */ }
+  }
+}
+function hapticSetting() {
+  if (typeof navigator.vibrate !== 'function') return '';
+  return '<h2>Отклик</h2><label class="checks"><input id="pulse-haptics" type="checkbox" '+(hapticsEnabled()?'checked':'')+'>Вибрация кнопки PULSE</label>';
+}
 function today() { return RitmHome.render(S,homeHelpers()); }
 function homeSheet(title,body) {
   document.getElementById('home-sheet')?.remove();
@@ -165,7 +183,7 @@ function recap() {
     muted('Ответы от друзей за 7 дней · '+contacts+'. В общей карточке виден только итог твоего плана.')+
     b('Поделиться карточкой','share-recap','btn full','share-2')+b('Скачать PNG','download-recap','textbtn full');
 }
-function settingsView(){const n=read('notifs')||{};return head('Настройки')+field('nickname','Имя в круге',S.profile.name,'text','maxlength="30"')+b('Сохранить имя','rename','linebtn')+'<h2>Уведомления</h2>'+[['pulse','Новый импульс и ответ'],['duel','Дуэли'],['season','Экспертный сезон'],['report','Отчёт недели']].map(([k,v])=>'<label class="checks"><input type="checkbox" data-pref="'+k+'" '+(n[k]!==false?'checked':'')+'>'+v+'</label>').join('')+'<p class="hint">Настройки ленты на этом устройстве. Системные push для PULSE требуют отдельного согласия.</p>'+(demo?muted('На GitHub Pages работает демо на этом устройстве. Серверные уведомления и восстановление доступны в полной версии.'):'<div class="row">'+b('Включить push','pushon','linebtn')+b('Отключить push','pushoff','linebtn')+'</div><h2>Доступ к профилю</h2>'+b('Получить одноразовый код','getcode','linebtn')+(code?'<p class="safe">'+e(code)+'</p>':'')+field('recovery','Код восстановления','','password','autocomplete="off"')+b('Восстановить','restore','linebtn'))+b('Приватность действий','go:privacy','choice')+(demo?b('Сбросить демонстрацию','resetask','choice','rotate-ccw'):'');}
+function settingsView(){const n=read('notifs')||{};return head('Настройки')+field('nickname','Имя в круге',S.profile.name,'text','maxlength="30"')+b('Сохранить имя','rename','linebtn')+'<h2>Уведомления</h2>'+[['pulse','Новый импульс и ответ'],['duel','Дуэли'],['season','Экспертный сезон'],['report','Отчёт недели']].map(([k,v])=>'<label class="checks"><input type="checkbox" data-pref="'+k+'" '+(n[k]!==false?'checked':'')+'>'+v+'</label>').join('')+'<p class="hint">Настройки ленты на этом устройстве. Системные push для PULSE требуют отдельного согласия.</p>'+(demo?muted('На GitHub Pages работает демо на этом устройстве. Серверные уведомления и восстановление доступны в полной версии.'):'<div class="row">'+b('Включить push','pushon','linebtn')+b('Отключить push','pushoff','linebtn')+'</div><h2>Доступ к профилю</h2>'+b('Получить одноразовый код','getcode','linebtn')+(code?'<p class="safe">'+e(code)+'</p>':'')+field('recovery','Код восстановления','','password','autocomplete="off"')+b('Восстановить','restore','linebtn'))+hapticSetting()+b('Приватность действий','go:privacy','choice')+(demo?b('Сбросить демонстрацию','resetask','choice','rotate-ccw'):'');}
 function notificationsView(){const pref=read('notifs')||{},notes=[];if(pref.pulse!==false)(S.feed||[]).filter(x=>x.person!==S.profile.id).slice(0,4).forEach(x=>notes.push([x.to_me?'Друг ответил своим делом':'Друг уже в движении',(x.name||'Друг')+' · '+labels[x.kind],'pulse']));if(pref.duel!==false&&S.games.some(g=>g.mode==='duel'&&g.active))notes.push(['Дуэль началась','Открой счёт и историю своих дней.','arena']);if(pref.report!==false&&weekly().total)notes.push(['Доступен RITM RECAP','Посмотри, какие дела вошли в неделю.','recap']);if(pref.season!==false&&demo)notes.push(['Сезоны открыты для просмотра','Демонстрационная витрина FOOD, RESET и DUO.','store']);return head('Уведомления')+(notes.length?notes.map(([t,m,k])=>'<button class="choice" data-a="go:'+k+'"><span>'+e(t)+'<br><small>'+e(m)+'</small></span>'+I('chevron-right')+'</button>').join(''):muted('Пока новых событий нет.'))+b('Настроить','go:settings','linebtn');}
 function renderMisc(){switch(view){
  case 'settings':return settingsView();case 'notifications':return notificationsView();
@@ -197,7 +215,7 @@ function clearInvite(){pendingGuest=null;guestInfo=null;const u=new URL(location
 async function seasonSave(){const existing=S.season,d=S.dna||{},plan=existing?{...existing.plan}:{focus:d.goal||'Регулярность тренировок',duration:Number(d.minutes)||20,place:d.place||'Дома',equipment:d.gear||'Без оборудования',adaptation:'Подойдёт привычная нагрузка',food_for:'Для себя',cooking:'15 минут',budget:d.budget||'Важна доступная цена'};plan.days=Number($('#days').value);let v=id=>$(id)?.value?Number($(id).value):null;
 await write('season',{plan,comparison:existing?existing.comparison:($('#comp')?.value||''),baseline:existing?existing.baseline:v('#base'),target:v('#target')});save('days',plan.days);notice('Условия сезона сохранены.');route('profile');}
 async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(cmd!=='time')document.getElementById('home-sheet')?.close();if(!['complete','time','short','kind','workdone'].includes(cmd))pendingWorkout=null;switch(cmd){
- case 'go':if(v==='today'&&view==='intro')save('entered',true);if(v==='store')expose('offers');if(v==='train'&&view==='today')trainingKey='';route(v);break;
+ case 'go':if(v==='today'&&view==='intro')save('entered',true);if(v==='store')expose('offers');if(v==='train'&&view==='today')trainingKey='';route(v);if(v==='pulse')heartbeat();break;
  case 'sheetclose':document.getElementById('home-sheet')?.close();break;
  case 'quicktime':showHomeTime();break;
  case 'homeplan':showHomePlan();break;
@@ -231,7 +249,7 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
  case 'complete':{const isAnswer=Boolean(reply);if(!S.profile.goal&&!S.games.length){route('name');notice('Сначала сохрани профиль или прими приглашение.');break;}
  if(taskKind==='food'&&!allows(recipe(recipeChoice)))throw Error('Выбери блюдо с подходящим составом.');
  const visibility=($('#visible')?.checked||reply)?'circle':'private';const out=await write('done',{kind:taskKind,minutes:time,task:taskKind==='food'?recipe(recipeChoice).name:taskKind,visibility,...(pendingWorkout?{training:pendingWorkout}:{}),variant:time<=5?'alternative':'original',...(reply||{}),...(activeGame?{game:activeGame}:{})});
- pendingWorkout=null;reply=null;activeGame='';privateAction=true;save('entered',true);route('today');if(isAnswer)document.querySelector('.home-pulse')?.classList.add('pulse-sent');notice('Действие сохранено.');break;}
+ pendingWorkout=null;reply=null;activeGame='';privateAction=true;save('entered',true);route('today');if(isAnswer){document.querySelector('.home-pulse')?.classList.add('pulse-sent');heartbeat();}notice('Действие сохранено.');break;}
  case 'setup':arenaMode=v;route('setup');break;case 'together':arenaMode='together';route('setup');break;case 'gamekind':gameKind=v;draw();break;
  case 'create-mode':{let mode={team:'circle',week:'duel',together:'circle'}[arenaMode]||arenaMode;let slot=$('#slot')?.value;const res=await write('create',{mode,kind:gameKind,proposed:slot?Math.floor(new Date(slot).getTime()/1000):null});route('share',res.game);break;}
  case 'create':{const r=await write('create',{mode:v,kind:'move'});route('share',r.game);break;}
@@ -270,7 +288,7 @@ async function shareText(t,text){if(navigator.share){await navigator.share({titl
 async function recapShare(downloadOnly=false){const w=RitmHome.week(S,weekly),canvas=document.createElement('canvas');canvas.width=800;canvas.height=530;const ctx=canvas.getContext('2d');ctx.fillStyle='#101110';ctx.fillRect(0,0,800,530);ctx.fillStyle='#d5fc53';ctx.font='bold 70px Arial';ctx.fillText('ritm.',50,100);ctx.fillStyle='#f5f6f2';ctx.font='bold 46px Arial';ctx.fillText('Моя неделя',50,220);ctx.font='bold 76px Arial';ctx.fillText(w.percent+'%',50,337);ctx.font='27px Arial';ctx.fillText(w.caption,50,405);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));const file=new File([blob],'RITM-RECAP.png',{type:'image/png'});if(!downloadOnly&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'RITM RECAP'});}else{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);notice('Карточка подготовлена.');}}
 async function seed(){if(demo){await window.ritmDemo.api('/demo/seed',{});S=await api('/api/me');}}
 document.addEventListener('click',async ev=>{const el=ev.target.closest('[data-a]');if(!el||busy)return;busy=true;try{await handle(el.dataset.a);}catch(err){if(err.name!=='AbortError')notice(err.message||'Попробуй ещё раз.');}finally{busy=false;}});
-document.addEventListener('change',ev=>{const el=ev.target;if(el.id==='visible')privateAction=!el.checked;if(el.dataset.pref){let o=read('notifs')||{};o[el.dataset.pref]=el.checked;save('notifs',o);}});
+document.addEventListener('change',ev=>{const el=ev.target;if(el.id==='pulse-haptics')save('pulseHaptics',el.checked);if(el.id==='visible')privateAction=!el.checked;if(el.dataset.pref){let o=read('notifs')||{};o[el.dataset.pref]=el.checked;save('notifs',o);}});
 async function init(){S=await api('/api/me');if(!S.allocation)await write('allocate',{channel:pendingGuest?'friend':new URLSearchParams(location.search).get('channel')||'direct'});const saved=read('available');time=(saved?.day===S.day?saved.minutes:null)||S.season?.plan.duration||Number(S.dna?.minutes)||20;
  if(pendingGuest){try{guestInfo=await api('/api/invite?token='+encodeURIComponent(pendingGuest));view='invite';}catch(err){clearInvite();notice(err.message);}}
  else if(demo&&new URLSearchParams(location.search).get('screen')==='today'){await seed();save('entered',true);view='today';}

@@ -18,6 +18,10 @@ def run(site):
                 p=ctx.pages[0]
             else:
                 browser=pw.webkit.launch();ctx=browser.new_context(**options);p=ctx.new_page()
+            if engine=='chromium':
+                p.add_init_script('''window.heartbeatCalls = [];
+                    Object.defineProperty(navigator, 'vibrate', {configurable:true,
+                        value:pattern=>{window.heartbeatCalls.push(pattern);return true;}});''')
             p.goto(site.rstrip('/')+'/?screen=today')
             p.locator('.home-week').wait_for(timeout=90000)
             action=lambda k:p.locator('[data-a="'+k+'"]').first
@@ -38,12 +42,36 @@ def run(site):
             action('quicktime').click();action('time:10').click()
             p.goto(urljoin(p.url,manifest['start_url']));p.locator('.home-week').wait_for(timeout=90000)
             assert '10 мин' in action('quicktime').inner_text()
+            nav_pulse=p.locator('#nav .pulse-nav')
+            if engine=='chromium':
+                assert p.evaluate('heartbeatCalls')==[]
+                nav_pulse.click()
+                assert p.evaluate('heartbeatCalls')==[[35,85,55]]
+                assert nav_pulse.locator('svg').evaluate("n=>getComputedStyle(n).animationName")=='ritm-heartbeat'
+                action('go:profile').click();action('go:settings').click()
+                p.locator('#pulse-haptics').uncheck()
+                p.reload();p.locator('.home-week').wait_for(timeout=90000)
+                nav_pulse.click()
+                assert p.evaluate('heartbeatCalls')==[]
+                action('go:profile').click();action('go:settings').click()
+                assert not p.locator('#pulse-haptics').is_checked()
+                p.locator('#pulse-haptics').check()
+                action('go:today').click()
+            else:
+                nav_pulse.click()
+                assert p.locator('body').get_attribute('data-screen')=='pulse'
             action('respond').click();action('kind:food').click();action('complete').click()
             p.get_by_text('10 из 11 действий',exact=True).wait_for()
             for name in ('today','profile','recap'):
                 if name!='today':action('go:'+name).click()
                 assert p.locator('.screen').get_by_text('10 из 11 действий',exact=True).is_visible()
             assert p.locator('.big').inner_text()=='91%'
+            if engine=='chromium':
+                assert p.evaluate('heartbeatCalls')==[[35,85,55]]
+                p.emulate_media(reduced_motion='reduce')
+                nav_pulse.click()
+                assert nav_pulse.locator('svg').evaluate("n=>getComputedStyle(n).animationName")=='none'
+
             print(engine,'passed standalone launch URL, real 82% to 91%, time persistence, dynamic viewport and navigation')
             ctx.close()
             if engine=='webkit':browser.close()

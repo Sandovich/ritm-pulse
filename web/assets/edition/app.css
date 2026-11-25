@@ -143,3 +143,12 @@ body[data-screen="intro"] h1 span {white-space:nowrap;}
 input[type=checkbox] {accent-color:var(--accent);}
 body[data-screen="game"] .edition-face {width:36px;height:36px;}
 @media(max-width:330px){body[data-screen="intro"] h1 span{white-space:normal;}}
+
+@media (prefers-reduced-motion: no-preference) {
+  #nav .pulse-nav.heartbeat svg { animation: ritm-heartbeat 240ms ease-out; }
+  @keyframes ritm-heartbeat {
+    0%, 30%, 100% { transform: scale(1); }
+    12% { transform: scale(1.08); }
+    58% { transform: scale(1.13); }
+  }
+}
