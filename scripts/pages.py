@@ -13,7 +13,7 @@ for node in tree.body:
     if isinstance(node,ast.ImportFrom) and (node.module.startswith('http') or node.module=='threading'):continue
     nodes.append(node)
 (out/'core.py').write_text(ast.unparse(ast.Module(body=nodes,type_ignores=[]))+'\n','utf8')
-html=(web/'mobile.html').read_text('utf8').replace('<!-- preview-runtime -->','<script src="browser.js"></script>')
+html=(web/'mobile.html').read_text('utf8').replace('<!-- preview-runtime -->','<script src="browser.js?rev=home-1"></script>')
 (out/'index.html').write_text(html,'utf8')
 manifest=json.loads((web/'manifest.webmanifest').read_text('utf-8-sig'))
 manifest.update(start_url='./',scope='./',background_color='#101110',theme_color='#101110')

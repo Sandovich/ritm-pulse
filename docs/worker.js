@@ -5,7 +5,10 @@ async function init(){
   const runtime=await loadPyodide({indexURL:runtimeBase});
   await runtime.loadPackage('sqlite3');
   for(const name of ['core.py','season.py','notifications.py','journey.py','fixture.py','bridge.py']){
-    const response=await fetch(new URL('./'+name,self.location.href));
+    const moduleUrl=new URL('./'+name,self.location.href);
+    const revision=new URL(self.location.href).searchParams.get('rev');
+    if(revision)moduleUrl.searchParams.set('rev',revision);
+    const response=await fetch(moduleUrl);
     if(!response.ok)throw Error('Не удалось загрузить '+name);
     runtime.FS.writeFile('/home/pyodide/'+name,await response.text());
   }
