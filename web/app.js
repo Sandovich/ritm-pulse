@@ -21,6 +21,7 @@ const options=(items,sel)=>items.map(x=>'<option'+(x===sel?' selected':'')+' val
 const chooseKind=(id,val)=>'<label>Моё действие<select id="'+id+'">'+Object.entries(labels).map(([k,v])=>'<option value="'+k+'"'+(k===val?' selected':'')+'>'+v+'</option>').join('')+'</select></label>';
 const notice=t=>$('#notice').textContent=t;
 async function api(path,body){
+ if(window.ritmDemo)return window.ritmDemo.api(path,body);
  const res=await fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
  const data=await res.json();if(!res.ok)throw Error(data.error||'Не удалось открыть страницу.');return data;
 }
@@ -80,9 +81,12 @@ async function handle(act){
  await write('done',doneData(k,Number($('[data-time="'+id+'"]').value),id));notice('Действие сохранено. Счёт обновляется у обоих участников.');return;}
  if(act in modes){const val=$('#slot')?.value;let result=await write('create',{kind:$('#arena-kind')?.value||kind,mode:act,proposed:val?Math.floor(new Date(val).getTime()/1000):null});shared=result.game;tab='Арена';notice('Приглашение готово.');}
 }
+if(!window.RITM_PREMIUM){
 document.addEventListener('change',e=>{if(e.target.id==='share-action')shareAction=e.target.checked;if(e.target.id==='pref-focus')$('#measurement').innerHTML=metricForm(e.target.value,null);if(e.target.id==='minutes')minutes=Number(e.target.value);if(e.target.id==='kind'){kind=e.target.value;render();}if(e.target.id==='arena-kind')kind=e.target.value;});
 document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||busy)return;$('#error').textContent='';notice('');busy=true;try{if(b.dataset.tab){tab=b.dataset.tab;recoveryCode='';if(invite)closeInvite();shared='';}else if(b.dataset.act){await handle(b.dataset.act);}render();}catch(err){$('#error').textContent=err.message;}finally{busy=false;}});
 async function init(){state=await api('/api/me');if(!state.allocation)await write('allocate',{channel:invite?'friend':entryChannel});if(state.season)minutes=state.season.plan.duration;kind=state.profile.goal==='Питание'?'food':state.profile.goal==='Прогулки'?'walk':'move';if(invite)try{preview=await api('/api/invite?token='+encodeURIComponent(invite));}catch(err){closeInvite();$('#error').textContent=err.message;}render();
  setInterval(async()=>{if(busy||invite||document.hidden||['Профиль','Анкета','Прогресс'].includes(tab)||['INPUT','SELECT'].includes(document.activeElement?.tagName))return;
  try{const prev=state,next=await api('/api/me');if(busy||state!==prev)return;const signature=s=>JSON.stringify([s.day,s.games,s.pulse,s.actions]);if(signature(prev)!==signature(next)){state=next;render();}}catch{}},4000);}
 init().catch(err=>$('#error').textContent=err.message);
+
+}

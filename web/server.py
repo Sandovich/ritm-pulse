@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0,str(ROOT))
+import journey
 import season
 import notifications
 MSK = timezone(timedelta(hours=3))
@@ -36,7 +37,8 @@ CREATE TABLE IF NOT EXISTS replies(game TEXT REFERENCES games(id),source_action 
 CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY,person TEXT REFERENCES people(id),at INTEGER NOT NULL,kind TEXT NOT NULL,game TEXT,minutes INTEGER,nonce TEXT,UNIQUE(person,kind,nonce));
 CREATE TABLE IF NOT EXISTS requests(person TEXT NOT NULL,nonce TEXT NOT NULL,verb TEXT NOT NULL,result TEXT NOT NULL,PRIMARY KEY(person,nonce));
 """
-SQL += season.SCHEMA + notifications.SCHEMA
+SQL += season.SCHEMA + notifications.SCHEMA + journey.SCHEMA
+FOOD += journey.EXTRA_FOOD
 
 def now(): return datetime.now(timezone.utc).timestamp()
 def day(at): return datetime.fromtimestamp(at,MSK).date()
@@ -81,9 +83,10 @@ def snapshot(c,who,t):
                 circles.append({'for_you':for_you,'game':g['id'],'person':m['id'],'name':m['name'],'count':a[0],'at':latest['at'] if latest else None,'source':source,'kind':latest['kind'] if latest else None,'answered':answered})
         g['active']=live(g,t);g['invite_open']=joinable(c,g,t)
         if who!=g['host']:g.pop('token')
-    return dict(**season.state(c,who,t),push_key=notifications.public_key(),profile=profile,day=str(day(t)),server_time=t,games=games,pulse=circles,
+    return dict(**journey.extra(c,who,t),**season.state(c,who,t),push_key=notifications.public_key(),profile=profile,day=str(day(t)),server_time=t,games=games,pulse=circles,
        actions=rows(c,'SELECT id,kind,minutes,task,label,at,NOT EXISTS(SELECT 1 FROM hidden_actions h WHERE h.action=actions.id) AS shared FROM actions WHERE person=? AND day=? ORDER BY at',(who,str(day(t)))))
 def operate(c,who,verb,b,t):
+    if verb in ('dna','interest','cheer'):return journey.operate(c,who,verb,b,t)
     if verb in ('allocate','exposure','season','checkin','book'):return season.operate(c,who,verb,b,t)
     if verb=='subscribe':notifications.subscribe(c,who,b.get('subscription'));return {}
     if verb=='unsubscribe':
@@ -167,6 +170,14 @@ def operate(c,who,verb,b,t):
             if (g['mode']=='duel' and (gref==g['id'] or not one(c,'SELECT 1 FROM hidden_actions WHERE action=?',(aid,)))) or (g['mode']=='relay' and g['id']==gref and who!=g['host']):
                 n=c.execute('INSERT OR IGNORE INTO marks VALUES(?,?,?,?)',(g['id'],who,str(day(t)),aid)).rowcount
                 if n:log(c,who,t,g['mode']+'_completed',g['id'],logged_minutes,g['id']+str(day(t)))
+        if 'training' in b:
+            note=b['training']
+            need(isinstance(note,dict),'Проверьте параметры занятия.')
+            workout=note.get('workout')
+            need(workout in ('strength','studio','walk') and kind==('walk' if workout=='walk' else 'move'),'Выберите тренировку из каталога.')
+            sets,reps=note.get('sets'),note.get('reps')
+            need(type(sets) is int and 1<=sets<=50 and type(reps) is int and 1<=reps<=300,'Проверьте число подходов и повторений.')
+            c.execute('INSERT OR IGNORE INTO training_notes VALUES(?,?,?,?)',(aid,workout,sets,reps))
         return {'action':aid}
     raise Bad('Неизвестная операция.')
 
@@ -197,7 +208,16 @@ class Handler(BaseHTTPRequestHandler):
         path=urlsplit(self.path).path
         category='recovery' if path.startswith('/api/recovery/') else 'write' if write else 'read'
         if not self.limits.allow(self.client_address[0],category):self.respond(429,{'error':'Слишком частые запросы. Попробуйте через минуту.'});return
-        files={'/':('app.html','text/html; charset=utf-8'),'/app.js':('app.js','text/javascript; charset=utf-8'),'/season.js':('season.js','text/javascript; charset=utf-8'),'/sw.js':('sw.js','text/javascript; charset=utf-8'),'/manifest.webmanifest':('manifest.webmanifest','application/manifest+json'),'/icon.png':('icon.png','image/png'),'/icon512.png':('icon512.png','image/png')}
+        files={'/pilot':('app.html','text/html; charset=utf-8'),'/':('mobile.html','text/html; charset=utf-8'),'/app.js':('app.js','text/javascript; charset=utf-8'),'/season.js':('season.js','text/javascript; charset=utf-8'),'/sw.js':('sw.js','text/javascript; charset=utf-8'),'/manifest.webmanifest':('manifest.webmanifest','application/manifest+json'),'/icon.png':('icon.png','image/png'),'/icon512.png':('icon512.png','image/png')}
+        if not write and (path.startswith('/assets/') or path in ('/premium.css','/premium.js','/content.js') or path.startswith('/demo/')):
+            from mimetypes import guess_type
+            demo=path.startswith('/demo/')
+            base=(ROOT.parent/'docs' if demo else ROOT).resolve()
+            part=path[6:] if demo else path.lstrip('/')
+            target=(base/(part or 'index.html')).resolve()
+            if not target.is_relative_to(base) or not target.is_file() or any(v.startswith('.') for v in target.relative_to(base).parts):
+                self.respond(404,{});return
+            self.respond(200,target.read_bytes(),guess_type(str(target))[0] or 'application/octet-stream');return
         if not write and path in files:
             name,typ=files[path];self.respond(200,(ROOT/name).read_bytes(),typ);return
         if (write and path not in ('/api/action','/api/recovery/create','/api/recovery/restore')) or (not write and path not in ('/api/me','/api/invite')):self.respond(404,{});return
