@@ -12,7 +12,7 @@ const ring=n=>'<svg class="ring" viewBox="0 0 80 80" role="img" aria-label="Вы
 const labels={move:'Тренировка',food:'Питание',walk:'Прогулка'},navs=[['today','Сегодня','house'],['food','Питание','utensils'],['pulse','PULSE','zap'],['arena','Арена','swords'],['profile','Профиль','user']];
 const demo=!!window.ritmDemo;
 let S,view='intro',detail='',stack=[],busy=false,ready=false,draft={},step=0,time=15,mt='Ужин',pantry='',qPantry=false,onlyFav=false,portions=1,foodView='recipes',arenaMode='duel',gameKind='move',activeGame='',reply=null,taskKind='move',privateAction=true,confirm='',code='',statusText='',clock=null,sTimer=null,left=600,sets=1,reps=8,trainingKey='',pendingWorkout=null,activeSet=false,activeClock=null,calendarSlot='',toastTimer=null,recipeChoice='salad',pendingGuest=new URLSearchParams(location.search).get('invite'),guestInfo=null,lastFocus=null;
-const read=k=>{try{return JSON.parse(localStorage.getItem(key(k))||'null')}catch{return null}}, save=(k,v)=>localStorage.setItem(key(k),JSON.stringify(v)),key=k=>'ritm-ui-'+(demo?'demo':'live')+'-'+(S?.profile.id||'init')+'-'+k;
+const read=k=>{try{return JSON.parse(localStorage.getItem(key(k))||'null')}catch{return null}}, save=(k,v)=>localStorage.setItem(key(k),JSON.stringify(v)),key=k=>(demo?window.ritmDemo.storagePrefix:'ritm-ui-live-')+(S?.profile.id||'init')+'-'+k;
 const notice=msg=>{statusText=msg;$('#toast').textContent=msg;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{$('#toast').textContent='';},3500);};
 const route=(name,arg='',push=true)=>{if(push)stack.push([view,detail]);view=name;detail=arg;draw();window.scrollTo({top:0,behavior:'instant'});$('#content').focus({preventScroll:true});if(view==='store'&&S)expose('offers');};
 const back=()=>{const old=stack.pop()||['today',''];route(...old,false);};
@@ -22,16 +22,32 @@ const nonce=()=>Array.from(crypto.getRandomValues(new Uint32Array(3))).join('-')
 async function write(verb,fields={}){S=await api('/api/action',{verb,nonce:nonce(),...fields});return S.result||{};}
 const shown=new Set();function expose(k){if(shown.has(k))return;shown.add(k);api('/api/action',{verb:'exposure',nonce:nonce(),step:k,channel:new URLSearchParams(location.search).get('channel')||'direct'}).catch(()=>shown.delete(k));}
 function weekly(){const today=Date.parse(S.day+'T00:00:00Z'),offset=(new Date(today).getUTCDay()+6)%7;const days=Array.from({length:7},(_,i)=>new Date(today+(i-offset)*86400000).toISOString().slice(0,10));const counts=days.map(d=>(S.history||[]).filter(a=>a.day===d).length);const target=S.season?.plan.days||Number(read('days'))||5;return {days,counts,target,total:counts.filter(Boolean).length,percent:pct(counts.filter(Boolean).length,target)};}
-const incoming=()=>S.pulse.find(x=>x.person!==S.profile.id&&x.source&&!x.answered);
+const incoming=()=>S.pulse.filter(x=>x.person!==S.profile.id&&x.source&&!x.answered).sort((a,b)=>b.at-a.at)[0];
 const allows=m=>{const p=S.dna||{},limit=p.limit||'';if(limit==='Указать свои'||limit.startsWith('Свои:'))return false;if(p.food==='Растительную'&&!m.plant||p.food==='Без мяса'&&!m.veg)return false;return !m.all.includes(limit)};
 const dishes=()=>Meals.filter(allows),recipe=id=>Meals.find(m=>m.id===id),work=id=>Workouts.find(x=>x.id===id)||Workouts[0];
 const logo='<span class="wordmark">ritm.</span>';
 function activeTab(){if(['meal','basket','food'].includes(view))return 'food';if(['game','arena'].includes(view))return 'arena';if(['pulse','invite'].includes(view))return 'pulse';if(['profile','dna-map','recap','checkin','settings','privacy'].includes(view))return 'profile';return 'today';}
 function head(title,cap=''){return (cap?label(cap):'')+'<h1>'+e(title)+'</h1>';}
-function today(){
- const w=weekly(),inc=incoming(),m=dishes().find(x=>x.type==='Ужин')||dishes()[0],g=S.games.find(x=>x.mode==='duel'&&x.active);
- const date=new Intl.DateTimeFormat('ru-RU',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(S.day+'T12:00:00Z'));
- return label(date)+'<h1>'+(S.profile.name?e(S.profile.name)+', твой день.':'Сегодня твой день.')+'</h1><div class="split"><div><div class="metric"><div>'+label('Твой ритм')+'<div class="big">'+w.percent+'<em>%</em></div><small>План недели · '+w.total+' из '+w.target+' дней</small></div>'+ring(w.percent)+'</div><section class="pulse-card">'+wave+label(inc?'PULSE · Новый импульс':'PULSE · Твой круг')+'<h2>'+(inc?e(inc.name||'Друг')+' уже в движении.':'Начни движение.')+'</h2><p>'+(inc?'Ответь своим делом в удобное время.':'Одно посильное дело — повод позвать друга.')+'</p>'+b(inc?'Ответить импульсом':'Открыть PULSE',inc?'respond':'go:pulse','btn full','zap')+'</section></div><div><div class="between"><h2>Твой план</h2><small>'+S.actions.length+' из 3 дел сегодня</small></div><div class="grid">'+pic(m?m.pic:'tomato','FOOD','Твоё питание',m?m.type+' · '+m.mins+' мин':'Подбор продуктов','go:food')+pic('strength','TRAIN','Тренировка','Свой план · '+time+' мин','go:train',true)+'</div></div></div><h2>Сколько есть времени?</h2>'+times()+'<div class="card"><div class="between"><div>'+label('Следующее действие')+'<h3>'+e(time<=10?'Короткое возвращение':'Блок твоего плана')+'</h3></div>'+ib('arrow-up-right','action:move','Выбрать действие')+'</div></div>'+(g?duelcard(g):'')+'<div class="item"><div>'+label('EXPERT')+'<h3>Разборы со специалистами</h3><small>Ближайшие даты уточняются</small></div>'+ib('chevron-right','go:experts','Открыть экспертов')+'</div>'+b('Посмотреть сезоны','go:store','linebtn','book-open');}
+function homeHelpers() {
+  return {I,e,demo,weekly,incoming,time,dinner:dishes().find(m=>m.type==='Ужин')};
+}
+function today() { return RitmHome.render(S,homeHelpers()); }
+function homeSheet(title,body) {
+  document.getElementById('home-sheet')?.remove();
+  const dialog=document.createElement('dialog');
+  dialog.id='home-sheet';dialog.className='home-sheet';dialog.setAttribute('aria-labelledby','sheet-title');
+  dialog.innerHTML='<div class="sheet-top"><h2 id="sheet-title">'+e(title)+'</h2>'+ib('x','sheetclose','Закрыть')+'</div>'+body;
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  dialog.addEventListener('click',ev=>{if(ev.target===dialog){const r=dialog.getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)dialog.close();}});
+  document.body.append(dialog);dialog.showModal();
+}
+function showHomePlan() {
+  const w=RitmHome.week(S,weekly);
+  const duel=S.games.find(g=>g.mode==='duel'&&g.active);
+  const links=[['Записать действие','action:move'],['Подстроить план','go:ai'],['Тренировки','go:train'],['Экспертные разборы','go:experts'],['Программы и сезоны','go:store']];
+  if(duel)links.push(['Моя дуэль','game:'+duel.id]);
+  homeSheet('Мой план',muted(w.caption+'. Выбери, сколько времени есть сегодня.')+times()+'<div class="sheet-links">'+links.map(([t,id])=>b(t,id,'','arrow-right')).join('')+'</div>');
+}
 const times=()=>'<div class="chips">'+[5,10,20,30,60].map(v=>b(v+' мин','time:'+v,'chip '+(v===time?'on':''))).join('')+'</div>';
 function intro(){return '<div class="onboarding-screen"><section class="welcome">'+photo('athlete','Бег на открытом воздухе','editorial')+'<div class="copy">'+label('RITM · Социальный фитнес')+'<h1>Становиться лучше. Вместе.</h1><p>Твоя цель. Твой ритм. Твои люди.</p>'+b('Создать свой профиль','start','btn full','arrow-right')+(demo?b('Посмотреть демо','demo-start','linebtn full'):b('Открыть демо для встречи','open-demo','linebtn full'))+'</div></section>'+b('Войти по приглашению','invitation','textbtn')+'</div>';}
 function dna(){let [k,title,opts,optional]=DnaSteps[step];return '<div class="onboarding-screen">'+label('RITM DNA · '+(step+1)+' из '+DnaSteps.length)+'<div class="meter"><i style="width:'+pct(step+1,DnaSteps.length)+'%"></i></div><h1>'+e(title)+'</h1>'+(optional?muted('Ответ помогает исключить продукты из демонстрационного каталога. Эта информация личная. Можно пропустить.'):'')+opts.map(o=>b((k==='minutes'?o+' мин':o),'dnaopt:'+o,'choice '+(draft[k]===o?'on':''),draft[k]===o?'check':'circle-dot')).join('')+(k==='limit'&&draft[k]==='Указать свои'?field('customLimit','Исключить из подбора',draft.custom||'', 'text','maxlength="120"'):'')+'<div class="row">'+(step?b('Назад','dnaback','linebtn'):'')+(optional?b('Пропустить','dnaskip','textbtn'):'')+b(step===DnaSteps.length-1?'Показать мою карту':'Продолжить','dnanext','btn','arrow-right')+'</div></div>';}
@@ -83,8 +99,9 @@ function renderMisc(){switch(view){
  }}
 const screens={today,food,pulse,arena,profile,intro,dna,'dna-map':dnaMap,action:actionScreen,setup,game,meal,train,work:workout,experts,expert,store:storeView,product,recap};
 function draw(){if(!S)return;const root=['today','food','pulse','arena','profile'],first=['intro','name','dna','invite','invitation'].includes(view);
- $('#head').innerHTML='<button class="headbtn" data-a="go:today" aria-label="На главный экран">'+logo+'</button><div class="tools">'+(demo?b(window.ritmDemo.actor==='friend'?'Демо · друг':'Демо','demomenu','chip'):'')+ib('bell','go:notifications','Уведомления')+ib('user','go:profile','Профиль')+'</div>';
- $('#content').innerHTML='<div class="screen">'+(!root.includes(view)&&!first?b('Назад','back','back','arrow-left'):'')+(screens[view]?screens[view]():renderMisc())+(view==='today'?b('Подстроить план','go:ai','textbtn','sparkles'):'')+'</div>';
+ document.body.classList.toggle('home-active',view==='today');
+ $('#head').innerHTML=view==='today'?RitmHome.header(S,homeHelpers()):'<button class="headbtn" data-a="go:today" aria-label="На главный экран">'+logo+'</button><div class="tools">'+(demo?b(window.ritmDemo.actor==='friend'?'Демо · друг':'Демо','demomenu','chip'):'')+ib('bell','go:notifications','Уведомления')+ib('user','go:profile','Профиль')+'</div>';
+ $('#content').innerHTML='<div class="screen">'+(!root.includes(view)&&!first?b('Назад','back','back','arrow-left'):'')+(screens[view]?screens[view]():renderMisc())+'</div>';
  $('#nav').innerHTML=first?'':navs.map(([id,n,icon])=>'<button data-a="go:'+id+'" class="'+(activeTab()===id?'active ':'')+(id==='pulse'?'pulse-nav':'')+'" '+(activeTab()===id?'aria-current="page"':'')+'>'+I(icon)+'<span>'+n+'</span></button>').join('');
  document.title='ritm. · '+(navs.find(x=>x[0]===view)?.[1]||'Твой ритм');
 }
@@ -92,8 +109,21 @@ function finishOnboarding(){save('entered',true);stack=[];route('today','',false
 function clearInvite(){pendingGuest=null;guestInfo=null;const u=new URL(location.href);u.searchParams.delete('invite');history.replaceState(null,'',u);}
 async function seasonSave(){const existing=S.season,d=S.dna||{},plan=existing?{...existing.plan}:{focus:d.goal||'Регулярность тренировок',duration:Number(d.minutes)||20,place:d.place||'Дома',equipment:d.gear||'Без оборудования',adaptation:'Подойдёт привычная нагрузка',food_for:'Для себя',cooking:'15 минут',budget:d.budget||'Важна доступная цена'};plan.days=Number($('#days').value);let v=id=>$(id)?.value?Number($(id).value):null;
 await write('season',{plan,comparison:existing?existing.comparison:($('#comp')?.value||''),baseline:existing?existing.baseline:v('#base'),target:v('#target')});save('days',plan.days);notice('Условия сезона сохранены.');route('profile');}
-async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(!['complete','time','short','kind','workdone'].includes(cmd))pendingWorkout=null;switch(cmd){
+async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(cmd!=='time')document.getElementById('home-sheet')?.close();if(!['complete','time','short','kind','workdone'].includes(cmd))pendingWorkout=null;switch(cmd){
  case 'go':if(v==='today'&&view==='intro')save('entered',true);if(v==='store')expose('offers');if(v==='train'&&view==='today')trainingKey='';route(v);break;
+ case 'sheetclose':document.getElementById('home-sheet')?.close();break;
+ case 'homeplan':showHomePlan();break;
+ case 'homeinvite':{
+   const available=S.games.find(g=>g.mode==='circle'&&g.token&&g.invite_open);
+   const id=available?.id||(await write('create',{mode:'circle',kind:'move'})).game;
+   route('share',id);break;
+ }
+ case 'homeperson':{
+   const member=RitmHome.people(S).find(p=>p.person===v);
+   if(!member){notice('Участник вышел из круга.');break;}
+   const action=member.source?'Последнее дело · '+labels[member.kind]+' · '+RitmHome.relative(member.at,S.server_time):'Пока нет новых дел, открытых кругу.';
+   homeSheet(member.name||'Участник',muted(action)+'<div class="sheet-links">'+(member.source&&!member.answered?b('Ответить своим делом','memberreply:'+member.person,'','zap'):'')+b('Открыть круг','game:'+member.game,'','users')+'</div>');break;
+ }
  case 'back':back();break;case 'start':expose('start');route('name');break;
  case 'named':{const name=$('#startname').value.trim();if(!name)throw Error('Введи имя для друзей.');await write('profile',{name,goal:S.profile.goal||'Регулярное движение',barrier:S.profile.barrier||'Мало времени',program:S.profile.program||'Своя программа'});draft={...S.dna};step=0;route('dna');break;}
  case 'editdna':draft={...S.dna};step=0;route('dna');break;case 'dnaopt':draft[DnaSteps[step][0]]=v;draw();break;case 'dnaback':step=Math.max(0,step-1);draw();break;
@@ -101,19 +131,19 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
  case 'dnanext':{let k=DnaSteps[step][0];if(!draft[k]&&!DnaSteps[step][3])throw Error('Выбери подходящий ответ.');if(k==='limit'&&draft[k]==='Указать свои'){let cust=$('#customLimit')?.value.trim();if(!cust)throw Error('Введи продукты или пропусти вопрос.');draft.limit='Свои: '+cust.slice(0,110);}
  if(step<DnaSteps.length-1){step++;draw();}else{await write('dna',{data:draft});await write('profile',{name:S.profile.name||'Участник',goal:({'Стать сильнее':'Физическая форма','Больше движения':'Прогулки','Питание в будни':'Питание'})[draft.goal]||'Регулярное движение',barrier:draft.barrier||'Мало времени',program:S.profile.program||'Своя программа'});save('entered',true);time=Number(draft.minutes)||20;route('dna-map');}break;}
  case 'demo-start':if(demo){await seed();finishOnboarding();}break;case 'open-demo':location.assign(new URL('./demo/',location.href));break;
- case 'demomenu':if(!demo)break;$('#content').innerHTML=head('Демонстрационный режим')+muted('Два тестовых профиля хранятся в этом браузере. Данные независимы от серверного пилота.')+b('Подготовить пример и открыть Сегодня','demo-start','choice','play')+b('Переключить участника','switchdemo','choice','users')+b('Пройти онбординг','go:intro','choice')+b('Сбросить демонстрацию','resetask','choice','rotate-ccw')+b('Назад','redraw','linebtn');break;
+ case 'demomenu':if(!demo)break;document.body.classList.remove('home-active');$('#content').innerHTML=head('Демонстрационный режим')+muted('Два тестовых профиля хранятся в этом браузере. Данные независимы от серверного пилота.')+b('Подготовить пример и открыть Сегодня','demo-start','choice','play')+b('Переключить участника','switchdemo','choice','users')+b('Пройти онбординг','go:intro','choice')+b('Сбросить демонстрацию','resetask','choice','rotate-ccw')+b('Назад','redraw','linebtn');break;
  case 'redraw':draw();break;case 'switchdemo':location.assign(window.ritmDemo.openFriend());break;
- case 'time':time=Number(v);draw();break;case 'timehelp':time=10;taskKind='move';route('action');notice('Выбран короткий блок на 10 минут.');break;
+ case 'time':time=Number(v);draw();if(document.getElementById('home-sheet')?.open)showHomePlan();break;case 'timehelp':time=10;taskKind='move';route('action');notice('Выбран короткий блок на 10 минут.');break;
  case 'rest':taskKind='food';privateAction=true;route('food');notice('Сегодня можно выбрать дело по питанию.');break;
  case 'homefood':qPantry=true;foodView='recipes';route('food');break;case 'alttrain':route('train');notice('Выбери знакомый вариант под своё оборудование.');break;
  case 'comeback':time=5;taskKind='walk';activeGame='';reply=null;route('action');notice('Начни с доступного действия на пять минут.');break;
  case 'action':activeGame='';reply=null;taskKind=v||'move';privateAction=true;route('action');break;
- case 'respond':{const i=incoming();if(!i)throw Error('Открытых импульсов пока нет.');reply={source:i.source,game:i.game};activeGame='';privateAction=false;taskKind=(S.dna?.goal==='Питание в будни')?'food':'move';route('action');break;}
+ case 'memberreply':case 'respond':{const i=cmd==='memberreply'?RitmHome.people(S).find(p=>p.person===v&&p.source&&!p.answered):incoming();if(!i)throw Error('Открытых импульсов пока нет.');reply={source:i.source,game:i.game};activeGame='';privateAction=false;taskKind=(S.dna?.goal==='Питание в будни')?'food':'move';route('action');break;}
  case 'kind':if(taskKind!==v)pendingWorkout=null;taskKind=v;draw();break;case 'short':time=5;draw();notice('Выбрана короткая версия.');break;
  case 'complete':{if(!S.profile.goal&&!S.games.length){route('name');notice('Сначала сохрани профиль или прими приглашение.');break;}
  if(taskKind==='food'&&!allows(recipe(recipeChoice)))throw Error('Выбери блюдо с подходящим составом.');
  const visibility=($('#visible')?.checked||reply)?'circle':'private';const out=await write('done',{kind:taskKind,minutes:time,task:taskKind==='food'?recipe(recipeChoice).name:taskKind,visibility,...(pendingWorkout?{training:pendingWorkout}:{}),variant:time<=5?'alternative':'original',...(reply||{}),...(activeGame?{game:activeGame}:{})});
- pendingWorkout=null;reply=null;activeGame='';privateAction=true;save('entered',true);route('today');document.querySelector('.pulse-card')?.classList.add('fired');notice('Действие сохранено.');break;}
+ pendingWorkout=null;reply=null;activeGame='';privateAction=true;save('entered',true);route('today');document.querySelector('.home-pulse,.pulse-card')?.classList.add('fired');notice('Действие сохранено.');break;}
  case 'setup':arenaMode=v;route('setup');break;case 'together':arenaMode='together';route('setup');break;case 'gamekind':gameKind=v;draw();break;
  case 'create-mode':{let mode={team:'circle',week:'duel',together:'circle'}[arenaMode]||arenaMode;let slot=$('#slot')?.value;const res=await write('create',{mode,kind:gameKind,proposed:slot?Math.floor(new Date(slot).getTime()/1000):null});route('share',res.game);break;}
  case 'create':{const r=await write('create',{mode:v,kind:'move'});route('share',r.game);break;}
@@ -155,9 +185,10 @@ document.addEventListener('click',async ev=>{const el=ev.target.closest('[data-a
 document.addEventListener('change',ev=>{const el=ev.target;if(el.id==='visible')privateAction=!el.checked;if(el.dataset.pref){let o=read('notifs')||{};o[el.dataset.pref]=el.checked;save('notifs',o);}});
 async function init(){S=await api('/api/me');if(!S.allocation)await write('allocate',{channel:pendingGuest?'friend':new URLSearchParams(location.search).get('channel')||'direct'});time=S.season?.plan.duration||Number(S.dna?.minutes)||20;
  if(pendingGuest){try{guestInfo=await api('/api/invite?token='+encodeURIComponent(pendingGuest));view='invite';}catch(err){clearInvite();notice(err.message);}}
+ else if(demo&&new URLSearchParams(location.search).get('screen')==='today'){await seed();save('entered',true);view='today';}
  else if(read('entered')||S.profile.goal){view='today';}
  ready=true;draw();if(view==='intro')expose('intro');
- setInterval(async()=>{if(busy||document.hidden||!['today','pulse','arena','game','notifications'].includes(view)||document.activeElement?.matches('input,select,textarea'))return;try{const before=S,next=await api('/api/me');if(busy||S!==before)return;const sig=s=>JSON.stringify([s.day,s.feed,s.actions,s.games,s.pulse]);if(sig(S)!==sig(next)){S=next;draw();}}catch{}},5500);
+ setInterval(async()=>{if(busy||document.hidden||!['today','pulse','arena','game','notifications'].includes(view)||document.activeElement?.matches('input,select,textarea'))return;try{const before=S,next=await api('/api/me');if(busy||S!==before)return;const sig=s=>JSON.stringify([s.day,s.feed,s.actions,s.games,s.pulse]);if(sig(S)!==sig(next)||(view==='today'&&Math.floor(S.server_time/60)!==Math.floor(next.server_time/60)&&!document.querySelector('dialog[open]'))){S=next;draw();}}catch{}},5500);
 }
 init().catch(err=>{$('#content').innerHTML=head('Не удалось открыть RITM')+muted(err.message)+'<button class="btn" id="retry">Попробовать ещё раз</button>';$('#retry').onclick=()=>location.reload();});
 })();

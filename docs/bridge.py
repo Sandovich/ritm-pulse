@@ -4,7 +4,7 @@ import sqlite3
 from contextlib import closing
 from urllib.parse import urlsplit, parse_qs
 import core
-from fixture import seed
+from fixture import home_plan, seed
 
 def request(raw):
     query=json.loads(raw)
@@ -42,6 +42,8 @@ def request(raw):
                 core.log(c,actor,t,'invite_viewed',game['id'],nonce=game['id'])
                 result={'mode':game['mode'],'name':game['name'],'open':core.joinable(c,game,t),'member':bool(core.one(c,'SELECT 1 FROM members WHERE game=? AND person=?',(game['id'],actor))),'proposed':game['proposed']}
             else:raise ValueError('Этот режим доступен на сервере RITM.')
+            if isinstance(result,dict) and "profile" in result:
+                result["home_plan"]=home_plan(c,actor,t)
     return json.dumps(result,ensure_ascii=False)
 def answer(raw):
     try:return json.dumps({'value':json.loads(request(raw))},ensure_ascii=False)

@@ -11,7 +11,7 @@ async function init(){
   }
   runtime.runPython('from bridge import answer');
   const db=await new Promise((resolve,reject)=>{
-    const open=indexedDB.open('ritm-pulse-2.1-device',1);
+    const open=indexedDB.open(new URL(self.location.href).searchParams.get('scenario')==='home'?'ritm-home-approval':'ritm-pulse-2.1-device',1);
     open.onupgradeneeded=()=>open.result.createObjectStore('state');
     open.onsuccess=()=>resolve(open.result);open.onerror=()=>reject(open.error);
   });
