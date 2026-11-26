@@ -119,7 +119,7 @@ function intro(){
  '</div><h2>'+(kitchen?'Сколько времени на готовку?':'Сколько времени есть?')+'</h2><div class="quick-choices" aria-label="Минуты">'+options('minutes',quickQuestions[1][2])+'</div>'+
  (!kitchen&&d.goal?'<h2>Где удобнее заниматься?</h2><div class="quick-choices">'+options('place',quickQuestions[2][2])+'</div>':'')+
  '<button class="btn full" data-a="quick-plan" '+(d.goal&&d.minutes&&(kitchen||d.place)?'':'disabled')+'>Подобрать мой первый шаг</button>'+
- '<div class="entry-links">'+b('Все программы','go:store','textbtn')+b('Есть приглашение','invitation','textbtn')+b('Посмотреть демо',demo?'demo-start':'open-demo','textbtn')+(!demo?b('Восстановить профиль','go:recover','textbtn'):'')+'</div></section>';
+ '<div class="entry-links">'+(d.goal?b('Продолжить позже','dna-later','textbtn'):'')+b('Все программы','go:store','textbtn')+b('Есть приглашение','invitation','textbtn')+b('Посмотреть демо',demo?'demo-start':'open-demo','textbtn')+(!demo?b('Восстановить профиль','go:recover','textbtn'):'')+'</div></section>';
 }
 function dna(){
   if(formMode==='quick')return intro();
@@ -229,11 +229,128 @@ function foodPreferences(){
  select('limit','Исключения',['Выбери вариант','Нет исключений','Яйца','Молочные продукты','Пшеница','Орехи',...(p.limit?.startsWith('Свои:')?[p.limit]:[]),'Другие или несколько'])+
  b('Применить к рациону','food-save','btn full');
 }
+// USDA SR Legacy: FDC ID, edible grams per unit, food description, kcal/protein/fat/carbs per 100 g.
+const nutrientFoods={
+ "овсяные хлопья": [
+  "173904",
+  1,
+  "сухие хлопья",
+  379.0,
+  13.15,
+  6.52,
+  67.7
+ ],
+ "яблоко": [
+  "171688",
+  182,
+  "яблоко с кожурой",
+  52.0,
+  0.26,
+  0.17,
+  13.81
+ ],
+ "рис готовый": [
+  "168878",
+  1,
+  "готовый белый рис",
+  130.0,
+  2.69,
+  0.28,
+  28.17
+ ],
+ "томат": [
+  "170457",
+  120,
+  "свежий томат",
+  18.0,
+  0.88,
+  0.2,
+  3.89
+ ],
+ "зелень": [
+  "170416",
+  1,
+  "петрушка",
+  36.0,
+  2.97,
+  0.79,
+  6.33
+ ],
+ "огурец": [
+  "168409",
+  100,
+  "огурец с кожурой",
+  15.0,
+  0.65,
+  0.11,
+  3.63
+ ],
+ "нут готовый": [
+  "173757",
+  1,
+  "отварной нут",
+  164.0,
+  8.86,
+  2.59,
+  27.42
+ ],
+ "хлеб": [
+  "172688",
+  30,
+  "цельнозерновой хлеб",
+  252.0,
+  12.45,
+  3.5,
+  42.71
+ ],
+ "яйцо": [
+  "171287",
+  50,
+  "яйцо без скорлупы",
+  143.0,
+  12.56,
+  9.51,
+  0.72
+ ],
+ "авокадо": [
+  "171705",
+  150,
+  "мякоть авокадо",
+  160.0,
+  2.0,
+  14.66,
+  8.53
+ ],
+ "фасоль готовая": [
+  "175203",
+  1,
+  "отварная белая фасоль",
+  139.0,
+  9.73,
+  0.35,
+  25.09
+ ],
+ "паста без яиц": [
+  "168927",
+  1,
+  "сухая пшеничная паста",
+  371.0,
+  13.04,
+  1.51,
+  74.67
+ ]
+};
 function nutrition(m){
- if(m.id!=='oat')return '';
- const grams=m.ing[0][1]*portions,apple=182*portions;
- const total=(o,a)=>Math.round((grams*o+apple*a)/10)/10;
- return '<details><summary>Пищевая ценность · '+Math.round(total(379,52))+' ккал</summary><p>На выбранные порции: белки '+num(total(13.15,.26))+' г · жиры '+num(total(6.52,.17))+' г · углеводы '+num(total(67.7,13.81))+' г.</p><small>Расчёт для сухих хлопьев и среднего яблока со съедобной частью 182 г. USDA SR Legacy, продукты 173904 и 171688.</small></details>';
+ const total=[0,0,0,0],sources=[];
+ for(const [name,amount,unit] of m.ing){
+  if(name==='вода')continue;
+  const food=nutrientFoods[name];if(!food)return '';
+  const [id,grams,label,...values]=food, weight=amount*(unit==='г'?1:grams)*portions;
+  values.forEach((v,i)=>total[i]+=v*weight/100);
+  sources.push('<a href="https://fdc.nal.usda.gov/food-details/'+id+'/nutrients" target="_blank" rel="noopener">'+e(label)+'</a> · '+num(weight)+' г');
+ }
+ const display=i=>num(Math.round(total[i]*10)/10);
+ return '<details><summary>Пищевая ценность · около '+Math.round(total[0])+' ккал</summary><p>На выбранные порции · белки '+display(1)+' г, жиры '+display(2)+' г, углеводы '+display(3)+' г.</p><small>Расчёт по USDA SR Legacy для базового рецепта. Съедобная масса ингредиентов в расчёте: '+sources.join(', ')+'. При замене продуктов значения меняются.</small></details>';
 }
 function portion(){return '<div class="between"><b>Порций</b><div class="amount">'+ib('minus','portions:-1','Уменьшить порции')+'<b>'+portions+'</b>'+ib('plus','portions:1','Увеличить порции')+'</div></div>';}
 function meal(){const m=recipe(detail);if(!m||!allows(m))return head('Рецепт недоступен')+muted('Ограничения в DNA исключили это блюдо.');let fav=read('favs')||[];return '<section class="workhero">'+photo(m.pic,m.name)+'<div class="copy">'+label(m.type+' · '+m.mins+' минут')+'<h1>'+e(m.name)+'</h1><div class="row">'+b(fav.includes(m.id)?'В избранном':'В избранное','fav:'+m.id,'linebtn','bookmark')+b('В корзину','cartadd:'+m.id,'linebtn','shopping-basket')+'</div></div></section>'+portion()+nutrition(m)+(m.type==='Ужин'?b('Выбрать ужином на сегодня','dinner:'+m.id,'linebtn full'):'')+'<h2>Ингредиенты</h2>'+m.ing.map(([i,q,u])=>'<div class="item"><span>'+e(i)+'</span><b>'+num(q*portions)+' '+e(u)+'</b></div>').join('')+muted('Расчётный бюджет · около '+num(m.rub*portions)+' ₽. Цена зависит от магазина.')+'<h2>Как приготовить</h2><ol class="steps">'+m.steps.map(x=>'<li>'+e(x)+'</li>').join('')+'</ol><div class="card">'+label('Замена продукта')+'<p>'+e(m.swap)+'</p></div>'+b('Отметить приготовление','mealaction:'+m.id,'btn full','check');}
