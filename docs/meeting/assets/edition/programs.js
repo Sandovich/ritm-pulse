@@ -46,7 +46,8 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
       (saved?'<p class="plus-saved" role="status">'+I('check',18)+'Интерес к тарифу сохранён</p>':
         b('Мне подходит за '+num(plusMonthlyRubles)+' ₽ в месяц','interest:platform:plus','btn full'))+
       b('Личный тренер · '+num(Catalog.TRAIN.price)+' ₽ за 28 дней','product:TRAIN','linebtn full','dumbbell')+
-      b('Посмотреть сезон с нутрициологом','product:FOOD','textbtn full');
+      b('Личный нутрициолог · '+num(Catalog.NUTRI.price)+' ₽ за 28 дней','product:NUTRI','linebtn full','utensils')+
+      b('Посмотреть сезон FOOD 28','product:FOOD','textbtn full');
   }
   function list() {
     const preferred=current()||recommended();
@@ -62,7 +63,7 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
       const x=Catalog[k];return row('product:'+k,k==='RESET'?'RESET LEAGUE':k+' 28',info[k]+' · '+num(x.price)+' ₽',x.pic);
     }).join('');
     return head('Программы')+plusCard()+
-      row('product:TRAIN',Catalog.TRAIN.title,'Один на один · 28 дней · '+num(Catalog.TRAIN.price)+' ₽',Catalog.TRAIN.pic)+'<div class="program-heading"><h2>Для одного</h2><span>Бесплатно</span></div>'+
+      ['TRAIN','NUTRI'].map(k=>row('product:'+k,Catalog[k].title,'Один на один · 28 дней · '+num(Catalog[k].price)+' ₽',Catalog[k].pic)).join('')+'<div class="program-heading"><h2>Для одного</h2><span>Бесплатно</span></div>'+
       '<p class="program-note">Выбери занятие и проходи его в своём темпе. Приглашать друга не нужно.</p>'+solo+
       '<div class="program-heading"><h2>С экспертами</h2><span>28 дней</span></div>'+seasons+
       b('Индивидуальные консультации','go:experts','linebtn full','users')+b('Подстроить план','go:ai','textbtn','sliders-horizontal');

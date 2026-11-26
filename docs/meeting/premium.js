@@ -186,7 +186,7 @@ function food() {
   else content=filters+'<div class="food-tools">'+b('По продуктам дома','pantry','textbtn','search')+b(onlyFav?'Все блюда':'Избранное','favfilter','textbtn','bookmark')+'</div>'+
     (qPantry?'<div class="card">'+field('ingredients','Какие продукты есть дома?',pantry,'search','placeholder="Нут, рис, томат"')+b('Найти блюда','match','btn')+'</div>':'')+
     (feature?hero(describe(feature))+list.slice(1).map(m=>row(describe(m))).join(''):muted('Подходящих рецептов пока нет. Можно изменить продукты поиска или собрать меню со специалистом.'));
-  return head('Твоё питание','RITM FOOD')+tabs+content+b('Готовлю для себя · личная программа','solo:kitchen','linebtn full','book-open')+b('Питание с нутрициологом · FOOD 28','product:FOOD','textbtn','users')+
+  return head('Твоё питание','RITM FOOD')+tabs+content+b('Готовлю для себя · личная программа','solo:kitchen','linebtn full','book-open')+b('Личный нутрициолог · '+num(Catalog.NUTRI.price)+' ₽ за 28 дней','product:NUTRI','linebtn full','utensils')+b('Групповой сезон · FOOD 28','product:FOOD','textbtn','users')+
     '<p class="safe">Демонстрационные рецепты. Проверь состав и замены с учётом своих ограничений.</p>';
 }
 function portion(){return '<div class="between"><b>Порций</b><div class="amount">'+ib('minus','portions:-1','Уменьшить порции')+'<b>'+portions+'</b>'+ib('plus','portions:1','Увеличить порции')+'</div></div>';}
@@ -209,36 +209,39 @@ function experts() {
     '<button class="author" data-a="expert:'+key+'">'+photo(x.photo,'Иллюстративный портрет')+'<span>'+label('Направление')+'<strong>'+x.label+'</strong><small>'+x.area+'</small></span>'+I('arrow-up-right',17)+'</button>').join('')+'</div>'+
     muted('Портреты иллюстративные. Специалисты подтвердят участие и условия консультаций перед запуском.')+(demo?b('Рабочий кабинет · демо','go:league-desk','linebtn full','users'):'');
 }
-function expert(){const x=Experts[detail]||Experts.train;return '<section class="workhero">'+photo(x.photo,'Иллюстративный портрет')+'<div class="copy">'+label('Экспертное направление')+'<h1>'+x.label+'</h1><p>'+x.desc+'</p></div></section>'+muted('Имя, квалификация, опыт, дата консультации и стоимость будут опубликованы после подтверждения специалистом.')+b(x.product==='TRAIN'?'Личный тренер · '+num(Catalog.TRAIN.price)+' ₽ за 28 дней':'Программа направления','product:'+x.product,'btn full','book-open')+b(S.interest.includes(detail+':consult')?'Интерес сохранён':'Оставить интерес к консультации','interest:'+detail+':consult','linebtn full');}
+function expert(){const x=Experts[detail]||Experts.train;return '<section class="workhero">'+photo(x.photo,'Иллюстративный портрет')+'<div class="copy">'+label('Экспертное направление')+'<h1>'+x.label+'</h1><p>'+x.desc+'</p></div></section>'+muted('Имя, квалификация, опыт, дата консультации и стоимость будут опубликованы после подтверждения специалистом.')+b(Catalog[x.product].title+' · '+num(Catalog[x.product].price)+' ₽ за 28 дней','product:'+x.product,'btn full','book-open')+b(S.interest.includes(detail+':consult')?'Интерес сохранён':'Оставить интерес к консультации','interest:'+detail+':consult','linebtn full');}
+const personalOffer = sku => sku === 'TRAIN' || sku === 'NUTRI';
 const seatActive=()=>S.booking?.sku==='RESET'&&S.booking.paid_kopeks>S.booking.refunded_kopeks;
 function bookingView(k) {
   const order=S.booking;
   if(!order){
-    const title=demo?(k==='TRAIN'?'Оформить в демо':'Выбрать в демо'):'Оставить заявку';
+    const title=demo?(personalOffer(k)?'Оформить в демо':'Выбрать в демо'):'Оставить заявку';
     return b(title,'book:'+k,'btn full','arrow-right');
   }
-  if(order.sku!==k)return muted('У тебя уже есть заявка на '+order.sku+'.')+b('Посмотреть свою заявку','product:'+order.sku,'linebtn full');
+  if(order.sku!==k)return muted('У тебя уже есть заявка на «'+(Catalog[order.sku]?.title||order.sku)+'».')+b('Посмотреть свою заявку','product:'+order.sku,'linebtn full');
   const {paid_kopeks:paid,refunded_kopeks:refunded}=order;
   const status=refunded?(refunded===paid?'Возвращена вся сумма':'Частичный возврат'):paid?'Оплата подтверждена':'Ожидает оплаты';
   const receipt='<section class="order-state" tabindex="-1" aria-live="polite">'+label('Твоя заявка · '+order.ref)+'<h2>'+status+'</h2>'+
     (paid?'<p>Оплачено '+num(paid/100)+' ₽'+(refunded?' · возвращено '+num(refunded/100)+' ₽':'')+'</p>':'')+'</section>';
   if(!demo)return receipt+(order.checkout&&!paid?'<a class="btn full" href="'+e(order.checkout)+'" rel="noreferrer" target="_blank">Перейти к оплате у организатора</a>':'');
-  if(!['RESET','TRAIN'].includes(k))return receipt;
+  if(k!=='RESET'&&!personalOffer(k))return receipt;
   if(!paid)return receipt+b('Подтвердить учебную оплату','receipt:paid','btn full','check');
   if(paid<=refunded)return receipt;
-  const next=k==='TRAIN'?b('Открыть дневник тренировок','go:train','btn full','dumbbell'):b('Открыть мой сезон','go:league-support','btn full','arrow-right');
+  const next=personalOffer(k)
+    ? (k==='NUTRI' ? b('Открыть моё питание','go:food','btn full','utensils') : b('Открыть дневник тренировок','go:train','btn full','dumbbell'))
+    : b('Открыть мой сезон','go:league-support','btn full','arrow-right');
   return receipt+next+b('Оформить учебный возврат','refund-review','textbtn full');
 }
 function product(){
   const k=Object.hasOwn(Catalog,detail)?detail:'RESET',x=Catalog[k],league=k==='RESET';
   const amount=S.booking?.sku===k?S.booking.price:x.price;
-  if(k==='TRAIN'){
+  if(personalOffer(k)){
     return head(x.title,'Индивидуальное сопровождение')+
       '<div class="offer-price"><strong>'+num(amount)+' ₽</strong><small>За 28 дней · один человек · разовая оплата</small></div>'+
-      '<p class="program-note">Тренер ведёт тебя лично. Можно начать без подписки PLUS.</p>'+
+      '<p class="program-note">'+(k==='NUTRI'?'Работа один на один. Твой дневник разбирает нутрициолог.':'Тренер ведёт тебя лично.')+' Можно начать без подписки PLUS.</p>'+
       '<h2>Как вы работаете</h2><dl class="offer-includes">'+['Знакомство','Программа','Обратная связь'].map((title,i)=>
         '<div><dt>'+e(title)+'</dt><dd>'+e(x.content[i])+'</dd></div>').join('')+'</dl>'+
-      muted('Тестовая цена. Условия и дату старта предстоит согласовать с тренером.'+(demo?' В демо деньги не списываются.':''))+bookingView(k);
+      muted('Тестовая цена. Условия и дату старта предстоит согласовать со специалистом.'+(demo?' В демо деньги не списываются.':''))+bookingView(k);
   }
   const heroCopy=league?'Питание и тренировки с двумя специалистами':x.title;
   const art='<section class="workhero offer-hero">'+photo(x.pic,'')+'<div class="copy">'+label(league?'Season 01 · до 10 участников':'Авторский сезон')+'<h1>'+(league?'RESET LEAGUE':k+' 28')+'</h1><p>'+e(heroCopy)+'</p></div></section>';
@@ -262,7 +265,7 @@ function profile() {
   if(demo&&seatActive())links.unshift(['league-support','Мой RESET LEAGUE','users']);
   return head(S.profile.name||'Мой профиль','RITM PROFILE')+'<div class="profile-plan">'+RitmHome.summary(S,homeHelpers())+'</div>'+
     '<div class="stat-pair">'+[['Тренировки',hist.filter(x=>x.kind==='move').length],['Дни питания',new Set(hist.filter(x=>x.kind==='food').map(x=>x.day)).size]].map(([k,n])=>'<div>'+label(k)+'<strong>'+n+'</strong><small>За последние 8 недель</small></div>').join('')+'</div>'+
-    (S.booking?.sku==='TRAIN'?b('Моя заявка · личный тренер','product:TRAIN','linebtn full','dumbbell'):'')+
+    (personalOffer(S.booking?.sku)?b('Моя заявка · '+Catalog[S.booking.sku].title.toLowerCase(),'product:'+S.booking.sku,'linebtn full',S.booking.sku==='TRAIN'?'dumbbell':'utensils'):'')+
     (S.season?muted('Твой сезон · день '+S.season.day+' из 28'):'')+'<div class="profile-links">'+links.map(([k,t,i])=>'<button class="choice" data-a="go:'+k+'"><span class="person">'+I(i,19)+t+'</span>'+I('chevron-right',16)+'</button>').join('')+'</div>';
 }
 function recap() {
@@ -357,7 +360,7 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
  case 'pulse-reply':if(incoming())return handle('respond');homeSheet('Ответы друзей',muted('Когда кто-то из твоего круга поделится делом, здесь можно будет ответить своим.')+b('Пригласить друга в круг','homeinvite','linebtn full','users'));break;
  case 'memberreply':case 'respond':{const i=cmd==='memberreply'?RitmHome.people(S).find(p=>p.person===v&&p.source&&!p.answered):incoming();if(!i)throw Error('Открытых импульсов пока нет.');reply={source:i.source,game:i.game};activeGame='';privateAction=false;taskKind=(S.dna?.goal==='Питание в будни')?'food':'move';route('action');break;}
  case 'kind':if(taskKind!==v)pendingWorkout=null;taskKind=v;draw();break;case 'short':time=5;draw();notice('Выбрана короткая версия.');break;
- case 'complete':{const isAnswer=Boolean(reply);if(!S.profile.goal&&!S.games.length&&!programs.current()&&S.booking?.sku!=='TRAIN'){route('name');notice('Сначала сохрани профиль или прими приглашение.');break;}
+ case 'complete':{const isAnswer=Boolean(reply);if(!S.profile.goal&&!S.games.length&&!programs.current()&&!personalOffer(S.booking?.sku)){route('name');notice('Сначала сохрани профиль или прими приглашение.');break;}
  if(taskKind==='food'&&!allows(recipe(recipeChoice)))throw Error('Выбери блюдо с подходящим составом.');
  const visibility=($('#visible')?.checked||reply)?'circle':'private';const out=await write('done',{kind:taskKind,minutes:time,task:taskKind==='food'?recipe(recipeChoice).name:taskKind,visibility,...(pendingWorkout?{training:pendingWorkout}:{}),variant:time<=5?'alternative':'original',...(reply||{}),...(activeGame?{game:activeGame}:{})});
  pendingWorkout=null;reply=null;activeGame='';privateAction=true;save('entered',true);route('today');if(isAnswer){document.querySelector('.home-pulse')?.classList.add('pulse-sent');heartbeat();}notice('Действие сохранено.');break;}
@@ -393,7 +396,7 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
    break;
  case 'expert':route('expert',v);break;case 'product':route('product',v);expose('offers');break;
  case 'book':if(!await expose('offers'))throw Error('Не удалось открыть предложение. Проверь связь и повтори.');await write('book',{sku:v});draw();notice(demo?'Демозаявка сохранена.':'Заявка сохранена.');break;
- case 'refund-review':if(demo&&S.booking?.sku===detail&&['RESET','TRAIN'].includes(detail)&&S.booking.paid_kopeks>S.booking.refunded_kopeks)homeSheet('Вернуть оплату за сезон?',muted('Будет оформлен учебный возврат по этой заявке.')+b('Вернуть '+num((S.booking.paid_kopeks-S.booking.refunded_kopeks)/100)+' ₽ в демо','receipt:refund','btn full')+b('Оставить сезон','sheetclose','textbtn full'));break;
+ case 'refund-review':if(demo&&S.booking?.sku===detail&&(detail==='RESET'||personalOffer(detail))&&S.booking.paid_kopeks>S.booking.refunded_kopeks)homeSheet('Вернуть оплату за сезон?',muted('Будет оформлен учебный возврат по этой заявке.')+b('Вернуть '+num((S.booking.paid_kopeks-S.booking.refunded_kopeks)/100)+' ₽ в демо','receipt:refund','btn full')+b('Оставить сезон','sheetclose','textbtn full'));break;
  case 'receipt':if(demo){S=await api('/demo/receipt',{kind:v});notice('');draw();document.querySelector('.order-state')?.focus({preventScroll:true});}break;
  case 'renewal-review':if(demo&&S.demo_renewal&&!S.demo_renewal.refunded_at)homeSheet('Вернуть оплату второго сезона?',muted('Заказ первого сезона сохранится.')+b('Подтвердить учебный возврат','renewal:refund','btn full')+b('Оставить сезон','sheetclose','textbtn full'));break;
  case 'renewal':if(demo){S=await api('/demo/renewal',{kind:v});draw();notice(v==='paid'?'Учебная покупка второго сезона подтверждена.':'Учебный возврат второго сезона подтверждён.');}break;
@@ -431,8 +434,8 @@ async function init(){S=await api('/api/me');if(!S.allocation)await write('alloc
  if(await choice.initialize(query)){/* The invitation supplies the first screen for guests. */}
  else if(pendingGuest){try{guestInfo=await api('/api/invite?token='+encodeURIComponent(pendingGuest));view='invite';}catch(err){clearInvite();notice(err.message);}}
  else if(demo&&['season-story','league-desk'].includes(query.get('screen'))){await seed();save('entered',true);view=query.get('screen');stack=[['profile','']];}
- else if(query.get('screen')==='coach'){
-   view='product';detail='TRAIN';stack=[[read('entered')||S.profile.goal?'today':'intro',''],['store','']];expose('offers');
+ else if(['coach','nutritionist'].includes(query.get('screen'))){
+   view='product';detail=query.get('screen')==='coach'?'TRAIN':'NUTRI';stack=[[read('entered')||S.profile.goal?'today':'intro',''],['store','']];expose('offers');
  }
  else if(['programs','plus'].includes(query.get('screen'))){
    view=query.get('screen')==='plus'?'plus':'store';
@@ -444,7 +447,7 @@ async function init(){S=await api('/api/me');if(!S.allocation)await write('alloc
  else if(readQuestionnaire()&&!readQuestionnaire().paused){
    const saved=readQuestionnaire();formMode=saved.mode||'full';step=saved.step;draft=saved.draft;view='dna';
  }
- else if(read('entered')||S.profile.goal||programs.current()||S.booking?.sku==='TRAIN'){view='today';}
+ else if(read('entered')||S.profile.goal||programs.current()||personalOffer(S.booking?.sku)){view='today';}
  ready=true;draw();if(view==='intro')expose('intro');
  setInterval(async()=>{if(busy||document.hidden||!['today','pulse','arena','game','notifications','choice'].includes(view)||document.activeElement?.matches('input,select,textarea'))return;try{const before=S,next=await api('/api/me');if(busy||S!==before)return;const sig=s=>JSON.stringify([s.day,s.feed,s.actions,s.games,s.pulse,s.choices,s.solo]);if(sig(S)!==sig(next)||(view==='today'&&Math.floor(S.server_time/60)!==Math.floor(next.server_time/60)&&!document.querySelector('dialog[open]'))){const previousSource=incoming()?.source;
  const updates=(next.choices||[]).filter(item=>{const old=(before.choices||[]).find(c=>c.id===item.id);return item.completed&&!old?.completed&&item.role==='voter'||item.selected&&!old?.selected&&item.role==='owner'||item.target&&!old&&item.role==='guest';});

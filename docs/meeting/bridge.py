@@ -22,7 +22,7 @@ def request(raw):
                 seed(c,t);result=core.snapshot(c,actor,t)
             elif route.path=='/demo/receipt':
                 from demo_ledger import record
-                booking = c.execute("SELECT ref,price FROM bookings WHERE person=? AND sku IN ('RESET','TRAIN')", (actor,)).fetchone()
+                booking = c.execute("SELECT ref,price FROM bookings WHERE person=? AND sku IN ('RESET','TRAIN','NUTRI')", (actor,)).fetchone()
                 kind = query['body'].get('kind')
                 core.need(booking and kind in ('paid','refund'), 'Сначала открой заявку на сезон с учебной оплатой.')
                 ref, price = booking

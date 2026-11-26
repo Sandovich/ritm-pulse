@@ -130,8 +130,8 @@ def operate(c, who, verb, b, t, *, choice_guest=False):
         return {}
     if verb in ('done', 'create') and (not choice_guest):
         solo_ready = one(c, 'SELECT 1 FROM solo_enrolments WHERE person=? AND selected=1', (who,))
-        coach_diary = one(c, "SELECT 1 FROM bookings WHERE person=? AND sku='TRAIN'", (who,))
-        need(solo_ready or coach_diary or one(c, 'SELECT goal FROM people WHERE id=?', (who,))[0] or one(c, 'SELECT 1 FROM members WHERE person=?', (who,)), 'Сначала настройте личный план в профиле или примите приглашение друга.')
+        personal_diary = one(c, "SELECT 1 FROM bookings WHERE person=? AND sku IN ('TRAIN','NUTRI')", (who,))
+        need(solo_ready or personal_diary or one(c, 'SELECT goal FROM people WHERE id=?', (who,))[0] or one(c, 'SELECT 1 FROM members WHERE person=?', (who,)), 'Сначала настройте личный план в профиле или примите приглашение друга.')
     if verb == 'profile':
         name = str(b.get('name', '')).strip()
         need(1 <= len(name) <= 30, 'Имя должно содержать от 1 до 30 знаков.')
