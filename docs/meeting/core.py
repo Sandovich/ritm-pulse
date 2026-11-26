@@ -102,7 +102,7 @@ def operate(c, who, verb, b, t, *, choice_guest=False):
             task = choices.FOOD_TASK if kind == 'food' else kind
             return operate(c, who, 'done', {'kind': kind, 'minutes': minutes, 'task': task, 'visibility': 'private'}, t, choice_guest=True)['action']
         return choices.operate(c, who, verb, b, t, log=log, day=day, finish=finish, minutes_allowed=MINUTES)
-    if verb in ('dna', 'interest', 'cheer'):
+    if verb in ('dna', 'interest', 'cheer', 'solo-select'):
         return journey.operate(c, who, verb, b, t)
     if verb in ('allocate', 'exposure', 'season', 'checkin', 'book'):
         return season.operate(c, who, verb, b, t)
@@ -129,7 +129,8 @@ def operate(c, who, verb, b, t, *, choice_guest=False):
         log(c, who, t, 'circle_left', gid)
         return {}
     if verb in ('done', 'create') and (not choice_guest):
-        need(one(c, 'SELECT goal FROM people WHERE id=?', (who,))[0] or one(c, 'SELECT 1 FROM members WHERE person=?', (who,)), 'Сначала настройте личный план в профиле или примите приглашение друга.')
+        solo_ready = one(c, 'SELECT 1 FROM solo_enrolments WHERE person=? AND selected=1', (who,))
+        need(solo_ready or one(c, 'SELECT goal FROM people WHERE id=?', (who,))[0] or one(c, 'SELECT 1 FROM members WHERE person=?', (who,)), 'Сначала настройте личный план в профиле или примите приглашение друга.')
     if verb == 'profile':
         name = str(b.get('name', '')).strip()
         need(1 <= len(name) <= 30, 'Имя должно содержать от 1 до 30 знаков.')
@@ -227,5 +228,6 @@ def operate(c, who, verb, b, t, *, choice_guest=False):
             sets, reps = (note.get('sets'), note.get('reps'))
             need(type(sets) is int and 1 <= sets <= 50 and (type(reps) is int) and (1 <= reps <= 300), 'Проверьте число подходов и повторений.')
             c.execute('INSERT OR IGNORE INTO training_notes VALUES(?,?,?,?)', (aid, workout, sets, reps))
+        journey.mark_solo(c, who, kind, task, b.get('training'), str(day(t)), aid)
         return {'action': aid}
     raise Bad('Неизвестная операция.')

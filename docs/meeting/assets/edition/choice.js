@@ -47,15 +47,10 @@ window.RitmChoice = function ({state, write, route, draw, notice, e, b, I, face,
       item.role==='guest' && item.target && !item.selected
     )).map(item => [status(item),selected(item)?.title || (item.name||'Друг')+' предлагает поменяться ролями','choice-open:'+item.id]);
   }
-  function modeMenu(hasReply) {
-    const modes = [
-      ['choice-new','hand-heart','CHOICE','Выбери мой ход'],
-      ['pulse-reply','zap','REPLY',hasReply?'Ответить своим делом':'Ответы друзей'],
-      ['setup:duel','swords','DUEL','Дуэль на неделю'],
-      ['together','users','TOGETHER','Вместе по времени']
-    ];
-    return '<div class="choice-modes">'+modes.map(([action,icon,cap,title])=>
-      '<button type="button" data-a="'+e(action)+'">'+I(icon,19)+'<span><small>'+cap+'</small><b>'+title+'</b></span></button>').join('')+'</div>'+
+  function modeMenu() {
+    return '<section class="pulse-invitation">'+I('zap',24)+'<h2>Пусть друг выберет твой ход</h2>'+
+      '<p>Предложи два дела и отправь ссылку. Друг выберет одно без регистрации.</p>'+
+      b('Предложить два дела','choice-new','btn','arrow-right')+'</section>'+
       (items().length?'<section class="choice-history"><h2>Ваши ходы</h2>'+items().map(item=>
         '<button type="button" data-a="choice-open:'+e(item.id)+'">'+I(item.completed?'check-check':'circle-dot',18)+'<span><b>'+e(status(item))+'</b><small>'+
         e(selected(item)?.title || item.options.map(x=>x.title).join(' / '))+'</small></span>'+I('chevron-right',17)+'</button>').join('')+'</section>':'');

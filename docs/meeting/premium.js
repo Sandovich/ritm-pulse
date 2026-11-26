@@ -9,13 +9,17 @@ const label=x=>'<span class="cap">'+e(x)+'</span>',muted=x=>'<p class="muted">'+
 const field=(id,title,v='',type='text',more='')=>'<label>'+e(title)+'<input id="'+id+'" type="'+type+'" value="'+e(v)+'" '+more+'></label>';
 const wave='<svg class="wave" viewBox="0 0 140 100" aria-hidden="true">'+Array.from({length:7},(_,i)=>'<path d="M-10 '+(40+i*2)+' Q20 48 34 45 T52 38L63 '+(9+i*2)+'L78 '+(83-i*3)+'L93 '+(34+i)+'Q105 46 140 40"/>').join('')+'</svg>';
 const ring=n=>'<svg class="ring" viewBox="0 0 80 80" role="img" aria-label="Выполнено '+n+' процентов плана"><circle cx="40" cy="40" r="33" stroke="#31362e"/><circle class="bar" cx="40" cy="40" r="33" stroke="#d5fc53" pathLength="100" stroke-dasharray="'+n+' 100" transform="rotate(-90 40 40)"/><path d="M19 42h12l6-12 8 23 6-13h11" fill="none" stroke="#d5fc53" stroke-width="2.5" stroke-linejoin="round"/></svg>';
-const labels={move:'Тренировка',food:'Питание',walk:'Прогулка'},navs=[['today','Сегодня','house'],['food','Питание','utensils'],['pulse','PULSE','zap'],['arena','Арена','swords'],['profile','Профиль','user']];
+let formMode='quick';
+const quickQuestions=[DnaSteps[0],DnaSteps.find(q=>q[0]==='minutes')];
+const questions=()=>formMode==='full'?DnaSteps:quickQuestions;
+const goalLabels={'Регулярность тренировок':'Заниматься дома','Стать сильнее':'Вернуться к силовым','Питание в будни':'Готовить для себя','Больше движения':'Чаще гулять'};
+const labels={move:'Тренировка',food:'Питание',walk:'Прогулка'},navs=[['today','Сегодня','house'],['food','Питание','utensils'],['pulse','Друзья','zap'],['arena','Арена','swords'],['profile','Профиль','user']];
 const demo=!!window.ritmDemo;
 let duelReward = '';
 let S,view='intro',detail='',stack=[],busy=false,ready=false,draft={},step=0,time=15,mt='Ужин',pantry='',qPantry=false,onlyFav=false,portions=1,foodView='recipes',arenaMode='duel',gameKind='move',activeGame='',reply=null,taskKind='move',privateAction=true,confirm='',code='',statusText='',clock=null,sTimer=null,left=600,sets=1,reps=8,trainingKey='',timerBudget=0,pendingWorkout=null,activeSet=false,activeClock=null,calendarSlot='',toastTimer=null,recipeChoice='salad',pendingGuest=new URLSearchParams(location.search).get('invite'),guestInfo=null,lastFocus=null;
 const read=k=>{try{return JSON.parse(localStorage.getItem(key(k))||'null')}catch{return null}}, save=(k,v)=>localStorage.setItem(key(k),JSON.stringify(v)),key=k=>(demo?window.ritmDemo.storagePrefix:'ritm-ui-live-')+(S?.profile.id||'init')+'-'+k;
 const notice=msg=>{statusText=msg;$('#toast').textContent=msg;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{$('#toast').textContent='';},3500);};
-const route=(name,arg='',push=true)=>{if(push)stack.push([view,detail]);view=name;detail=arg;draw();window.scrollTo({top:0,behavior:'instant'});$('#content').focus({preventScroll:true});if(view==='store'&&S)expose('offers');};
+const route=(name,arg='',push=true)=>{if(push)stack.push([view,detail]);view=name;detail=arg;draw();window.scrollTo({top:0,behavior:'instant'});$('#content').focus({preventScroll:true});};
 const back=()=>{const old=stack.pop()||['today',''];route(...old,false);};
 const opt=(name,val)=>e(name)+'="'+e(val)+'"';
 async function api(path,body){
@@ -43,16 +47,20 @@ const incoming=()=>S.pulse.filter(x=>x.person!==S.profile.id&&x.source&&!x.answe
 const allows=m=>{const p=S.dna||{},limit=p.limit||'';if(limit==='Указать свои'||limit.startsWith('Свои:'))return false;if(p.food==='Растительную'&&!m.plant||p.food==='Без мяса'&&!m.veg)return false;return !m.all.includes(limit)};
 const dishes=()=>Meals.filter(allows),recipe=id=>Meals.find(m=>m.id===id),work=id=>Workouts.find(x=>x.id===id)||Workouts[0];
 const logo='<span class="wordmark">ritm.</span>';
-function activeTab(){if(['meal','basket','food'].includes(view))return 'food';if(['game','arena'].includes(view))return 'arena';if(['pulse','invite','share','choice','choice-compose'].includes(view)||(view==='action'&&reply))return 'pulse';if(['profile','dna-map','recap','checkin','settings','privacy','store','product','expert','experts','seasonplan','season-story','next-season','league-desk','league-review','league-support'].includes(view))return 'profile';return 'today';}
+function activeTab(){if(['store','solo','product'].includes(view)){
+  const origin=[...stack].reverse().find(([name])=>navs.some(([id])=>id===name));
+  return origin?.[0]||'today';
+}if(['meal','basket','food'].includes(view))return 'food';if(['game','arena'].includes(view))return 'arena';if(['pulse','invite','share','choice','choice-compose'].includes(view)||(view==='action'&&reply))return 'pulse';if(['profile','dna-map','recap','checkin','settings','privacy','store','product','expert','experts','seasonplan','season-story','next-season','league-desk','league-review','league-support'].includes(view))return 'profile';return 'today';}
 function head(title,cap=''){return (cap?label(cap):'')+'<h1>'+e(title)+'</h1>';}
 const row = options => RitmVisual.photoRow(photo,I,e,options);
 const hero = options => RitmVisual.hero(photo,I,e,options);
 const face = member => RitmVisual.figure(member,demo,e);
+const programs = createProgramViews({state:()=>S, photo,I,b,e,label,head,num});
 const choice = window.RitmChoice({state:()=>S, write, route, draw, notice, e, b, I, face, label, demo, heartbeat});
 const rewardLine = reward => reward ? '<span class="duel-reward">'+I('hand-heart',19)+'<span><small>Ваша награда</small><b>'+e(reward)+'</b></span></span>' : '';
 const eventTime = stamp => S.server_time-stamp<86400?RitmHome.relative(stamp,S.server_time):new Date(stamp*1000).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
 function homeHelpers() {
-  return {I,e,demo,weekly,incoming,time,dinner:dishes().find(m=>m.type==='Ужин')};
+  return {I,e,demo,weekly,incoming,time,personal:programs.home(),dinner:dishes().find(m=>m.type==='Ужин')};
 }
 const heartbeatPattern = [35, 85, 55];
 let nextHeartbeat = 0;
@@ -96,12 +104,29 @@ function showHomePlan() {
 const times=()=>'<div class="chips">'+[5,10,20,30,60].map(v=>b(v+' мин','time:'+v,'chip '+(v===time?'on':''))).join('')+'</div>';
 function intro() {
   return '<section class="entry"><div class="entry-image">'+photo('edition/start','Бегунья перед стартом')+
-    '</div><div class="entry-copy"><h1><span>Становиться лучше.</span><br>Вместе.</h1><p>Твоя цель. Твой ритм. Твои люди.</p>'+
-    b('Создать свой профиль','start','btn full','arrow-right')+'<div class="entry-options">'+
-    b('Войти по приглашению','invitation','textbtn')+b('Посмотреть демо',demo?'demo-start':'open-demo','textbtn')+(!demo?b('Восстановить профиль','go:recover','textbtn'):'')+'</div></div></section>';
+    '</div><div class="entry-copy"><h1><span>Твой первый шаг.</span></h1><p>Начни самостоятельно, с экспертом или вместе с другом.</p>'+
+    b('Выбрать программу','go:store','btn full','arrow-right')+'<div class="entry-options">'+
+    b('Подобрать за два вопроса','start','textbtn')+b('Войти по приглашению','invitation','textbtn')+b('Посмотреть демо',demo?'demo-start':'open-demo','textbtn')+(!demo?b('Восстановить профиль','go:recover','textbtn'):'')+'</div></div></section>';
 }
-function dna(){let [k,title,opts,optional]=DnaSteps[step];return '<div class="onboarding-screen">'+label('RITM DNA · '+(step+1)+' из '+DnaSteps.length)+'<div class="meter"><i style="width:'+pct(step+1,DnaSteps.length)+'%"></i></div><h1>'+e(title)+'</h1>'+(optional?muted('Ответ помогает исключить продукты из демонстрационного каталога. Эта информация личная. Можно пропустить.'):'')+opts.map(o=>b((k==='minutes'?o+' мин':o),'dnaopt:'+o,'choice '+(draft[k]===o?'on':''),draft[k]===o?'check':'circle-dot')).join('')+(k==='limit'&&draft[k]==='Указать свои'?field('customLimit','Исключить из подбора',draft.custom||'', 'text','maxlength="120"'):'')+'<div class="row">'+(step?b('Назад','dnaback','linebtn'):'')+(optional?b('Пропустить','dnaskip','textbtn'):'')+b(step===DnaSteps.length-1?'Показать мою карту':'Продолжить','dnanext','btn','arrow-right')+'</div>'+b('Продолжить позже','dna-later','textbtn full')+'</div>';}
-function dnaMap(){const d=S.dna||{};return head('Твоя карта изменений','RITM DNA')+'<div class="card">'+label('Личная цель')+'<h2>'+e(d.goal||S.profile.goal||'Выбери первую цель')+'</h2>'+muted(d.shape||'Карта строится из твоих ответов.')+'</div>'+[['Препятствие',d.barrier],['Режим',d.minutes?d.minutes+' минут · '+d.place:'Выбери доступное время'],['Поддержка',d.motivation||'Личный план'],['Первый шаг',d.goal==='Питание в будни'?'Выбери одно блюдо из доступных продуктов.':'Выбери короткий знакомый блок или прогулку.']].map(x=>'<div class="item"><span>'+e(x[0])+'</span><b>'+e(x[1]||'Можно уточнить')+'</b></div>').join('')+b('К моему дню','go:today','btn full')+b('Изменить ответы','editdna','textbtn');}
+function dna(){
+  const steps=questions(), [k,storedTitle,opts,optional]=steps[step];
+  const title=formMode==='quick'?(k==='goal'?'С чего хочешь начать?':'Сколько времени есть в день?'):storedTitle;
+  const choices=opts.map(o=>{
+    const txt=k==='goal'?(goalLabels[o]||o):k==='minutes'?o+' минут':o;
+    const checked=draft[k]===o;
+    return '<button type="button" class="answer-option" aria-pressed="'+checked+'" data-a="dnaopt:'+e(o)+'"><span>'+e(txt)+'</span><i aria-hidden="true">'+(checked?I('check',15):'')+'</i></button>';
+  }).join('');
+  const custom=k==='limit'&&draft[k]==='Указать свои';
+  const next=step<steps.length-1?'Дальше':formMode==='quick'?'Посмотреть программу':'Сохранить ответы';
+  return '<div class="onboarding-screen">'+label((formMode==='quick'?'Подбор программы':'Мои предпочтения')+' · '+(step+1)+' из '+steps.length)+
+    '<div class="meter"><i style="width:'+pct(step+1,steps.length)+'%"></i></div><h1>'+e(title)+'</h1>'+
+    (optional?muted('Учитываем ответ при подборе блюд. Этот вопрос можно пропустить.'):'')+
+    '<div class="answer-list">'+choices+'</div>'+(custom?field('customLimit','Какие продукты исключить?',draft.custom||'','text','maxlength="120"'):'')+
+    '<button class="btn full" data-a="dnanext" '+(!draft[k]?'disabled':'')+'>'+next+I('arrow-right',18)+'</button>'+
+    '<div class="onboard-links">'+(step?b('Назад','dnaback','textbtn'):'')+(optional?b('Пропустить вопрос','dnaskip','textbtn'):'')+
+    b('Продолжить позже','dna-later','textbtn')+'</div></div>';
+}
+function dnaMap(){const d=S.dna||{};return head('Твои предпочтения','Личный профиль')+'<div class="card">'+label('Личная цель')+'<h2>'+e(d.goal||S.profile.goal||'Выбери первую цель')+'</h2>'+muted(d.shape||'Карта строится из твоих ответов.')+'</div>'+[['Препятствие',d.barrier],['Режим',d.minutes?d.minutes+' минут · '+d.place:'Выбери доступное время'],['Поддержка',d.motivation||'Личный план'],['Первый шаг',d.goal==='Питание в будни'?'Выбери одно блюдо из доступных продуктов.':'Выбери короткий знакомый блок или прогулку.']].map(x=>'<div class="item"><span>'+e(x[0])+'</span><b>'+e(x[1]||'Можно уточнить')+'</b></div>').join('')+b('К моему дню','go:today','btn full')+b('Настроить предпочтения','editdna','textbtn');}
 function duelcard(g) {
   const me=g.participants.find(p=>p.id===S.profile.id),other=g.participants.find(p=>p.id!==S.profile.id);
   const start=g.starts?new Date((g.starts+3*3600)*1000).toISOString().slice(0,10):null;
@@ -125,11 +150,16 @@ function pulse() {
   const entries=(S.feed||[]).slice(0,16).map(x=>'<div class="social-event">'+face({id:x.person,name:x.name})+'<div>'+label(x.to_me?'Ответ тебе':labels[x.kind])+
     '<b>'+e(x.person===S.profile.id?'Ты':x.name||'Друг')+'</b><small>'+e(eventTime(x.at))+'</small></div>'+
     (x.person===S.profile.id?'<small>'+x.cheers+' реакций</small>':b(String(x.cheers),'cheer:'+x.circle+':'+x.action,'chip '+(x.cheered?'on':''),'heart'))+'</div>').join('');
-  return head('PULSE','Круг друзей')+choice.modeMenu(!!incoming())+RitmHome.pulse(S,homeHelpers())+groups+b('Создать круг','create:circle','textbtn','users')+
-    '<h2>Лента круга</h2>'+(entries||muted('Здесь появятся действия, которыми поделятся участники.'))+
-    '<div class="row">'+b('Выполнить вместе','together','linebtn','clock')+b('Приватность','go:privacy','linebtn','lock')+'</div>';
+  const event=incoming();
+  const inviteTools='<div class="pulse-tools">'+b('Устроить дуэль','setup:duel','linebtn','swords')+
+    b('Выбрать время вместе','together','linebtn','clock')+'</div>';
+  return head('С друзьями','PULSE')+(event?RitmHome.pulse(S,homeHelpers()):'')+choice.modeMenu()+inviteTools+
+    (groups||'<h2>Твой круг</h2>')+b(circles.length?'Создать ещё один круг':'Создать круг друзей','create:circle','textbtn','users')+
+    (entries||circles.length?'<h2>Лента круга</h2>'+(entries||muted('Когда участник поделится делом, оно появится здесь.')):'')+
+    '<div class="pulse-tools">'+b('Записать своё дело','action:move','linebtn','plus')+b('Приватность','go:privacy','linebtn','lock')+'</div>';
+
 }
-function actionScreen(){let m=recipe(recipeChoice);return head(reply?'Ответить своим делом':'Моё действие',reply?'PULSE':'План на сегодня')+'<div class="chips">'+Object.entries(labels).map(([k,v])=>b(v,'kind:'+k,'chip '+(k===taskKind?'on':''))).join('')+'</div><h2>Доступное время</h2>'+times()+'<div class="card">'+(taskKind==='food'?label('FOOD')+'<h3>'+e(m?.name||'Выбери блюдо')+'</h3>'+b('Выбрать другое блюдо','go:food','textbtn'):label('Твой план')+'<h3>'+e(taskKind==='walk'?'Прогулка в своём темпе':'Знакомый блок программы')+'</h3>'+muted('Выбери движение из своего согласованного плана.'))+'</div><label class="checks"><input type="checkbox" id="visible" '+(!privateAction||reply?'checked':'')+(reply?' disabled':'')+'>Поделиться видом действия с кругом</label>'+b(reply?'Ответить импульсом':'Отметить выполнение','complete','btn full','check')+b('Сегодня сложно · короткая версия','short','textbtn');}
+function actionScreen(){let m=recipe(recipeChoice);return head(reply?'Ответить своим делом':'Моё действие',reply?'PULSE':'План на сегодня')+'<div class="chips">'+Object.entries(labels).map(([k,v])=>b(v,'kind:'+k,'chip '+(k===taskKind?'on':''))).join('')+'</div><h2>Доступное время</h2>'+times()+'<div class="card">'+(taskKind==='food'?label('FOOD')+'<h3>'+e(m?.name||'Выбери блюдо')+'</h3>'+b('Выбрать другое блюдо','go:food','textbtn'):label('Твой план')+'<h3>'+e(pendingWorkout?work(pendingWorkout.workout).title:taskKind==='walk'?'Прогулка в своём темпе':'Знакомый блок программы')+'</h3>'+muted('Выбери движение из своего согласованного плана.'))+'</div>'+(reply||S.games.some(g=>g.mode==='circle')?'<label class="checks"><input type="checkbox" id="visible" '+(!privateAction||reply?'checked':'')+(reply?' disabled':'')+'>Поделиться видом действия с кругом</label>':'')+b(reply?'Ответить импульсом':'Отметить выполнение','complete','btn full','check')+b('Сегодня сложно · короткая версия','short','textbtn');}
 
 function arena() {
   const games=S.games.filter(g=>g.mode!=='circle'),featured=games.find(g=>g.mode==='duel'&&g.active&&g.starts);
@@ -147,16 +177,16 @@ function mealsFiltered(){let list=dishes();if(onlyFav){let fav=read('favs')||[];
 function weekMenu(){const permitted=dishes(),list=permitted.filter(m=>m.type==='Ужин');return Array.from({length:7},(_,i)=>list.length?list[i%list.length]:permitted[i%Math.max(permitted.length,1)]).filter(Boolean);}
 function food() {
   const list=mealsFiltered(),feature=list[0];
-  const tabs='<div class="segmented">'+[['recipes','Сегодня'],['week','Неделя'],['cart','Корзина']].map(([k,n])=>b(n,'foodview:'+k,'chip '+(foodView===k?'on':''))).join('')+'</div>';
+  const tabs='<div class="segmented">'+[['recipes','Рецепты'],['week','На неделю'],['cart','Покупки']].map(([k,n])=>b(n,'foodview:'+k,'chip '+(foodView===k?'on':''))).join('')+'</div>';
   const filters='<div class="chips meal-filters">'+['Завтрак','Обед','Ужин'].map(n=>b(n,'mealtype:'+n,'chip '+(mt===n?'on':''))).join('')+'</div>';
   const describe=m=>({art:m.pic,kicker:m.type,title:m.name,note:m.mins+' мин · 1 порция',action:'meal:'+m.id});
   let content;
   if(foodView==='cart') content=basket();
   else if(foodView==='week') content='<h2>Ужины на семь дней</h2>'+weekMenu().map((m,i)=>row({...describe(m),kicker:['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'][i]})).join('')+b('Собрать корзину на неделю','weekcart','btn full','shopping-basket');
-  else content=filters+'<div class="food-tools">'+b('Из того, что дома','pantry','textbtn','search')+b(onlyFav?'Все блюда':'Избранное','favfilter','textbtn','bookmark')+'</div>'+
+  else content=filters+'<div class="food-tools">'+b('По продуктам дома','pantry','textbtn','search')+b(onlyFav?'Все блюда':'Избранное','favfilter','textbtn','bookmark')+'</div>'+
     (qPantry?'<div class="card">'+field('ingredients','Какие продукты есть дома?',pantry,'search','placeholder="Нут, рис, томат"')+b('Найти блюда','match','btn')+'</div>':'')+
     (feature?hero(describe(feature))+list.slice(1).map(m=>row(describe(m))).join(''):muted('Подходящих рецептов пока нет. Можно изменить продукты поиска или собрать меню со специалистом.'));
-  return head('Твоё питание','RITM FOOD')+tabs+content+b('Программы по питанию','product:FOOD','textbtn','book-open')+
+  return head('Твоё питание','RITM FOOD')+tabs+content+b('Готовлю для себя · личная программа','solo:kitchen','linebtn full','book-open')+b('Питание с нутрициологом · FOOD 28','product:FOOD','textbtn','users')+
     '<p class="safe">Демонстрационные рецепты. Проверь состав и замены с учётом своих ограничений.</p>';
 }
 function portion(){return '<div class="between"><b>Порций</b><div class="amount">'+ib('minus','portions:-1','Уменьшить порции')+'<b>'+portions+'</b>'+ib('plus','portions:1','Увеличить порции')+'</div></div>';}
@@ -172,7 +202,7 @@ function train() {
     b('Каталог программ','go:store','textbtn')+'<h2>История</h2>'+((S.history||[]).filter(a=>a.kind!=='food').slice(0,5).map(a=>'<div class="item"><small>'+e(a.day)+'</small><b>'+
     (a.workout?e(work(a.workout).title):labels[a.kind])+' · '+a.minutes+' мин'+(a.workout&&a.workout!=='walk'?' · '+a.sets+' × '+a.reps:'')+'</b></div>').join('')||muted('Здесь появятся записанные занятия.'));
 }
-function workout(){const w=work(detail);return '<section class="workhero mono">'+photo(w.pic,w.title)+'<div class="copy">'+label(w.theme+' · '+w.gear)+'<h1>'+e(w.title)+'</h1>'+muted(w.cue)+'</div></section><h2>План занятия</h2><ol class="steps">'+w.steps.map(x=>'<li>'+e(x)+'</li>').join('')+'</ol><div class="card">'+label('Таймер · выбранный отрезок')+'<div id="timer" class="timer">'+timeText()+'</div><div class="row">'+b(activeSet?'Пауза':'Старт','timer','btn',activeSet?'pause':'play')+b('Сбросить','timerreset','linebtn')+'</div></div><div class="grid">'+field('sets','Подходов',sets,'number','min="1" max="50"')+field('reps','Повторений',reps,'number','min="1" max="300"')+'</div>'+b('Записать занятие','workdone:'+w.id,'btn full','check')+b('Техника и варианты','tech:'+w.id,'linebtn full','circle-play')+muted('Демонстрационный блок. Интенсивность и технику сверяй со своим тренером.');}
+function workout(){const w=work(detail);return '<section class="workhero mono">'+photo(w.pic,w.title)+'<div class="copy">'+label(w.theme+' · '+w.gear)+'<h1>'+e(w.title)+'</h1>'+muted(w.cue)+'</div></section><h2>План занятия</h2><ol class="steps">'+w.steps.map(x=>'<li>'+e(x)+'</li>').join('')+'</ol><div class="card">'+label('Таймер · выбранный отрезок')+'<div id="timer" class="timer">'+timeText()+'</div><div class="row">'+b(activeSet?'Пауза':'Старт','timer','btn',activeSet?'pause':'play')+b('Сбросить','timerreset','linebtn')+'</div></div>'+(w.id==='walk'?'':'<div class="grid">'+field('sets','Подходов',sets,'number','min="1" max="50"')+field('reps','Повторений',reps,'number','min="1" max="300"')+'</div>')+b('Записать занятие','workdone:'+w.id,'btn full','check')+b('Техника и варианты','tech:'+w.id,'linebtn full','circle-play')+muted('Демонстрационный блок. Интенсивность и технику сверяй со своим тренером.');}
 const timeText=()=>String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0');
 function experts() {
   return head('Твои эксперты','RITM EXPERT')+'<div class="author-list">'+Object.entries(Experts).map(([key,x])=>
@@ -180,12 +210,6 @@ function experts() {
     muted('Портреты иллюстративные. Специалисты подтвердят участие и условия консультаций перед запуском.')+(demo?b('Рабочий кабинет · демо','go:league-desk','linebtn full','users'):'');
 }
 function expert(){const x=Experts[detail]||Experts.train;return '<section class="workhero">'+photo(x.photo,'Иллюстративный портрет')+'<div class="copy">'+label('Экспертное направление')+'<h1>'+x.label+'</h1><p>'+x.desc+'</p></div></section>'+muted('Имя, квалификация, опыт, дата консультации и стоимость будут опубликованы после подтверждения специалистом.')+b('Программа направления','product:'+x.product,'btn full','book-open')+b(S.interest.includes(detail+':consult')?'Интерес сохранён':'Оставить интерес к консультации','interest:'+detail+':consult','linebtn full');}
-function storeView() {
-  const order=(S.allocation?.ordering||'RESET,FOOD,DUO').split(',');
-  return head('Авторские сезоны','RITM STORE')+muted('28 дней с экспертами. Разовая оплата, без автопродления.')+
-    '<div class="season-list">'+order.map(k=>{const x=Catalog[k];return hero({art:x.pic,kicker:x.who,title:k==='RESET'?'RESET LEAGUE':k+' 28',note:(k==='RESET'?'До 10 участников':x.title)+' · '+num(x.price)+' ₽'+(k==='DUO'?' за двоих':''),action:'product:'+k});}).join('')+'</div>'+
-    '<div class="row">'+b('Программы тренера','expert:train','textbtn')+b('AI · адаптация','go:ai','textbtn')+'</div>';
-}
 const seatActive=()=>S.booking?.sku==='RESET'&&S.booking.paid_kopeks>S.booking.refunded_kopeks;
 function bookingView(k) {
   const order=S.booking;
@@ -219,7 +243,7 @@ function product(){
 
 function profile() {
   const hist=S.history||[];
-  const links=[['dna-map','Карта RITM DNA','target'],['checkin','Личные замеры и сверка','chart-no-axes-column'],['recap','Отчёт RITM RECAP','share-2'],
+  const links=[['dna-map','Мои предпочтения','target'],['checkin','Личные замеры и сверка','chart-no-axes-column'],['recap','Отчёт RITM RECAP','share-2'],
     ['seasonplan','Персональный план','list-checks'],['experts','Мои специалисты','users'],['store','Сезоны и программы','book-open'],['settings','Настройки и доступ','settings']];
   if(demo)links.unshift(['season-story','Твоя история сезонов','trophy']);
   if(demo&&seatActive())links.unshift(['league-support','Мой RESET LEAGUE','users']);
@@ -247,13 +271,13 @@ function renderMisc(){switch(view){
  case 'tech':return head('Техника и варианты','RITM TRAIN')+photo(work(detail).pic,'Иллюстрация тренировочной среды','tech-art')+'<div class="card"><h3>'+e(work(detail).title)+'</h3><p>'+e(work(detail).cue)+'</p></div>'+muted('Учебное видео и индивидуальную адаптацию добавит тренер после проверки. Пока используй свою знакомую программу.')+b('Другой блок','go:train','linebtn')+b('Направление тренера','expert:train','linebtn');
  case 'ai':return head('Подстроить план','RITM AI · деморежим')+muted('Подбор по правилам из демонстрационного каталога. Объяснение появится при выборе.')+[['10 минут','timehelp'],['Сегодня не могу тренироваться','rest'],['Что есть дома?','homefood'],['Вернуться после паузы','comeback'],['Заменить упражнение','alttrain']].map(([t,k])=>b(t,k,'choice','sparkles')).join('')+b('Интерес к премиальному AI','interest:ai:plus','linebtn');
  case 'confirm':return head(confirm==='reset'?'Сбросить демо?':'Выйти из круга?')+muted(confirm==='reset'?'Удалятся демонстрационные отметки и заявки на этом устройстве.':'Друзья перестанут видеть твои действия в этом круге.')+b('Подтвердить','confirmed','btn')+b('Отмена','back','linebtn');
- case 'name':return head('Как тебя называть?','Профиль')+field('startname','Имя для друзей',S.profile.name,'text','maxlength="30" autocomplete="given-name"')+b('Перейти к подбору','named','btn full')+b('Назад','back','textbtn full');
+ case 'name':return head('Как тебя называть?','Профиль')+field('startname','Твоё имя',S.profile.name,'text','maxlength="30" autocomplete="given-name"')+b('Продолжить','named','btn full')+b('Назад','back','textbtn full');
  default:return head('Твой день')+b('На главную','go:today');
  }}
-const screens={choice:()=>choice.detail(detail),'choice-compose':choice.composer,today,food,pulse,arena,profile,intro,dna,'dna-map':dnaMap,action:actionScreen,setup,game,meal,train,work:workout,experts,expert,store:storeView,product,recap};
+const screens={choice:()=>choice.detail(detail),'choice-compose':choice.composer,today,food,pulse,arena,profile,intro,dna,'dna-map':dnaMap,action:actionScreen,setup,game,meal,train,work:workout,experts,expert,store:programs.list,solo:()=>programs.detail(detail),product,recap};
 const lifecycle=demo?createRitmLifecycle({read,save,route,draw,b,e,I,label,muted,head,num,price:Catalog.RESET.price,participantName:()=>S.profile.name||'Участник',hasSeat:seatActive,renewal:()=>S.demo_renewal}):null;
 if(lifecycle)Object.assign(screens,{'season-story':lifecycle.journey,'next-season':lifecycle.offer,'league-desk':lifecycle.desk,'league-review':()=>lifecycle.review(detail),'league-support':lifecycle.support});
-let lastPulseSource='';
+let lastPulseSource='',offerObserver;
 function draw(){if(!S)return;const root=['today','food','pulse','arena','profile'],ballot=view==='choice'&&choice.isBallot(detail)&&stack.length===0,first=ballot||['intro','name','dna','invite','invitation','recover'].includes(view);
  document.body.classList.toggle('home-active',view==='today');
  document.body.dataset.screen=view;
@@ -261,13 +285,19 @@ function draw(){if(!S)return;const root=['today','food','pulse','arena','profile
  $('#head').innerHTML=first?'<div class="home-brand"><span class="home-wordmark">ritm.</span>'+(demo?'<span class="home-demo">демо</span>':'')+'</div>'+(ballot?label('PULSE / CHOICE'):''):RitmHome.header(S,homeHelpers());
  $('#content').innerHTML='<div class="screen">'+(!root.includes(view)&&!first?b('Назад','back','back','arrow-left'):'')+(screens[view]?screens[view]():renderMisc())+'</div>';
  $('#nav').innerHTML=first?'':navs.map(([id,n,icon])=>'<button data-a="go:'+id+'" class="'+(activeTab()===id?'active ':'')+(id==='pulse'?'pulse-nav':'')+'" '+(activeTab()===id?'aria-current="page"':'')+'>'+I(icon)+'<span>'+n+'</span></button>').join('');
+ if(view==='store'&&'IntersectionObserver' in window){
+   const firstOffer=document.querySelector('.program-row[data-a^="product:"]');
+   if(firstOffer){offerObserver?.disconnect();offerObserver=new IntersectionObserver(([entry])=>{
+     if(entry.isIntersecting){expose('offers');offerObserver.disconnect();}
+   });offerObserver.observe(firstOffer);}
+ }else offerObserver?.disconnect();
  if(view==='today'||view==='pulse'){const id=incoming()?.source;if(id&&id!==lastPulseSource)document.querySelector('.home-pulse')?.classList.add('pulse-arrived');lastPulseSource=id||'';}
  document.title='ritm. · '+(navs.find(x=>x[0]===view)?.[1]||'Твой ритм');
 }
 function readQuestionnaire(){
  try{
    const value=JSON.parse(sessionStorage.getItem(key('onboarding')));
-   return Number.isInteger(value?.step)&&DnaSteps[value.step]&&value.draft?value:null;
+   return Number.isInteger(value?.step)&&(value.mode==='quick'?quickQuestions:DnaSteps)[value.step]&&value.draft?value:null;
  }catch{return null;}
 }
 function finishOnboarding(){save('entered',true);stack=[];route('today','',false);}
@@ -275,7 +305,7 @@ function clearInvite(){pendingGuest=null;guestInfo=null;const u=new URL(location
 async function seasonSave(){const existing=S.season,d=S.dna||{},plan=existing?{...existing.plan}:{focus:d.goal||'Регулярность тренировок',duration:Number(d.minutes)||20,place:d.place||'Дома',equipment:d.gear||'Без оборудования',adaptation:'Подойдёт привычная нагрузка',food_for:'Для себя',cooking:'15 минут',budget:d.budget||'Важна доступная цена'};plan.days=Number($('#days').value);let v=id=>$(id)?.value?Number($(id).value):null;
 await write('season',{plan,comparison:existing?existing.comparison:($('#comp')?.value||''),baseline:existing?existing.baseline:v('#base'),target:v('#target')});save('days',plan.days);notice('Условия сезона сохранены.');route('profile');}
 async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(cmd!=='time')document.getElementById('home-sheet')?.close();if(!['complete','time','short','kind','workdone'].includes(cmd))pendingWorkout=null;if(cmd.startsWith('choice-'))return choice.handle(cmd,v,detail);if(lifecycle&&cmd.startsWith('life-'))return lifecycle.handle(cmd,v);switch(cmd){
- case 'go':if(view==='choice'||view==='choice-compose')choice.clearAddress();if(v==='today'&&view==='intro')save('entered',true);if(v==='store')expose('offers');if(v==='train'&&view==='today')trainingKey='';route(v);if(v==='pulse')heartbeat();break;
+ case 'go':if(view==='choice'||view==='choice-compose')choice.clearAddress();if(v==='today'&&view==='intro')save('entered',true);if(v==='train'&&view==='today')trainingKey='';route(v);if(v==='pulse')heartbeat();break;
  case 'sheetclose':document.getElementById('home-sheet')?.close();break;
  case 'quicktime':showHomeTime();break;
  case 'homeplan':showHomePlan();break;
@@ -290,18 +320,18 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
    const action=member.source?'Последнее дело · '+labels[member.kind]+' · '+RitmHome.relative(member.at,S.server_time):'Пока нет новых дел, открытых кругу.';
    homeSheet(member.name||'Участник',muted(action)+'<div class="sheet-links">'+(member.source&&!member.answered?b('Ответить своим делом','memberreply:'+member.person,'','zap'):'')+b('Открыть круг','game:'+member.game,'','users')+'</div>');break;
  }
- case 'back':back();break;case 'start':expose('start');route('name');break;
- case 'named':{const name=$('#startname').value.trim();if(!name)throw Error('Введи имя для друзей.');await write('profile',{name,goal:S.profile.goal||'Регулярное движение',barrier:S.profile.barrier||'Мало времени',program:S.profile.program||'Своя программа'});draft={...S.dna};step=0;route('dna');break;}
+ case 'back':back();break;case 'start':expose('start');draft={...S.dna};formMode='quick';step=0;route('dna');break;
+ case 'named':{const name=$('#startname').value.trim();if(!name)throw Error('Введи имя для друзей.');await write('profile',{name,goal:S.profile.goal||'Регулярное движение',barrier:S.profile.barrier||'Мало времени',program:S.profile.program||'Своя программа'});draft={...S.dna};formMode='quick';step=0;route('dna');break;}
  case 'editdna':{
    const saved=readQuestionnaire();
-   step=saved?.step||0;draft={...(saved?.draft||S.dna)};
+   formMode=saved?(saved.mode||'full'):'full';step=saved?.step||0;draft={...(saved?.draft||S.dna)};
    if(draft.limit?.startsWith('Свои: ')){draft.custom=draft.limit.slice(6);draft.limit='Указать свои';}
    route('dna');break;
  }
- case 'dna-later':sessionStorage.setItem(key('onboarding'),JSON.stringify({step,draft,paused:true}));save('entered',true);route('today');notice('К анкете можно вернуться из профиля.');break;case 'dnaopt':draft[DnaSteps[step][0]]=v;draw();break;case 'dnaback':step=Math.max(0,step-1);draw();break;
- case 'dnaskip':delete draft[DnaSteps[step][0]];delete draft.custom;step++;draw();break;
- case 'dnanext':{let k=DnaSteps[step][0];if(!draft[k]&&!DnaSteps[step][3])throw Error('Выбери подходящий ответ.');if(k==='limit'&&draft[k]==='Указать свои'){let cust=$('#customLimit')?.value.trim();if(!cust)throw Error('Введи продукты или пропусти вопрос.');draft.limit='Свои: '+cust.slice(0,110);}
- if(step<DnaSteps.length-1){step++;draw();}else{await write('dna',{data:draft});await write('profile',{name:S.profile.name||'Участник',goal:({'Стать сильнее':'Физическая форма','Больше движения':'Прогулки','Питание в будни':'Питание'})[draft.goal]||'Регулярное движение',barrier:draft.barrier||'Мало времени',program:S.profile.program||'Своя программа'});save('entered',true);time=Number(draft.minutes)||20;route('dna-map');}break;}
+ case 'dna-later':sessionStorage.setItem(key('onboarding'),JSON.stringify({step,mode:formMode,draft,paused:true}));save('entered',true);route('today');notice('К анкете можно вернуться из профиля.');break;case 'dnaopt':draft[questions()[step][0]]=v;draw();break;case 'dnaback':step=Math.max(0,step-1);draw();break;
+ case 'dnaskip':delete draft[questions()[step][0]];delete draft.custom;step++;draw();break;
+ case 'dnanext':{let k=questions()[step][0];if(!draft[k]&&!questions()[step][3])throw Error('Выбери подходящий ответ.');if(k==='limit'&&draft[k]==='Указать свои'){let cust=$('#customLimit')?.value.trim();if(!cust)throw Error('Введи продукты или пропусти вопрос.');draft.limit='Свои: '+cust.slice(0,110);}
+ if(step<questions().length-1){step++;draw();}else{await write('dna',{data:draft});await write('profile',{name:S.profile.name||'Участник',goal:({'Стать сильнее':'Физическая форма','Больше движения':'Прогулки','Питание в будни':'Питание'})[draft.goal]||'Регулярное движение',barrier:draft.barrier||'Мало времени',program:S.profile.program||'Своя программа'});save('entered',true);time=Number(draft.minutes)||20;save('available',{day:S.day,minutes:time});sessionStorage.removeItem(key('onboarding'));if(formMode==='quick'){stack=[['today','']];route('solo',programs.recommended(),false);}else route('dna-map');}break;}
  case 'demo-start':if(demo){await seed();finishOnboarding();}break;case 'open-demo':location.assign(new URL('./demo/',location.href));break;
  case 'demomenu':if(!demo)break;document.body.classList.remove('home-active');document.body.dataset.screen='demo';$('#content').innerHTML=head('Демонстрационный режим')+muted('Два тестовых профиля хранятся в этом браузере. Заполненный пример показывает учебную неделю. Данные независимы от серверного пилота.')+b('Подготовить пример и открыть Сегодня','demo-start','choice','play')+b('Переключить участника','switchdemo','choice','users')+b('Пройти онбординг','go:intro','choice')+b('Сбросить демонстрацию','resetask','choice','rotate-ccw')+b('Назад','redraw','linebtn');break;
  case 'redraw':draw();break;case 'switchdemo':location.assign(window.ritmDemo.openFriend());break;
@@ -313,7 +343,7 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
  case 'pulse-reply':if(incoming())return handle('respond');homeSheet('Ответы друзей',muted('Когда кто-то из твоего круга поделится делом, здесь можно будет ответить своим.')+b('Пригласить друга в круг','homeinvite','linebtn full','users'));break;
  case 'memberreply':case 'respond':{const i=cmd==='memberreply'?RitmHome.people(S).find(p=>p.person===v&&p.source&&!p.answered):incoming();if(!i)throw Error('Открытых импульсов пока нет.');reply={source:i.source,game:i.game};activeGame='';privateAction=false;taskKind=(S.dna?.goal==='Питание в будни')?'food':'move';route('action');break;}
  case 'kind':if(taskKind!==v)pendingWorkout=null;taskKind=v;draw();break;case 'short':time=5;draw();notice('Выбрана короткая версия.');break;
- case 'complete':{const isAnswer=Boolean(reply);if(!S.profile.goal&&!S.games.length){route('name');notice('Сначала сохрани профиль или прими приглашение.');break;}
+ case 'complete':{const isAnswer=Boolean(reply);if(!S.profile.goal&&!S.games.length&&!programs.current()){route('name');notice('Сначала сохрани профиль или прими приглашение.');break;}
  if(taskKind==='food'&&!allows(recipe(recipeChoice)))throw Error('Выбери блюдо с подходящим составом.');
  const visibility=($('#visible')?.checked||reply)?'circle':'private';const out=await write('done',{kind:taskKind,minutes:time,task:taskKind==='food'?recipe(recipeChoice).name:taskKind,visibility,...(pendingWorkout?{training:pendingWorkout}:{}),variant:time<=5?'alternative':'original',...(reply||{}),...(activeGame?{game:activeGame}:{})});
  pendingWorkout=null;reply=null;activeGame='';privateAction=true;save('entered',true);route('today');if(isAnswer){document.querySelector('.home-pulse')?.classList.add('pulse-sent');heartbeat();}notice('Действие сохранено.');break;}
@@ -335,11 +365,18 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
  case 'fav':{let f=read('favs')||[];save('favs',f.includes(v)?f.filter(x=>x!==v):[...f,v]);draw();break;}
  case 'cartadd':{let cart=read('cart')||{};cart[v]=(cart[v]||0)+portions;save('cart',cart);notice('Ингредиенты добавлены в корзину.');break;}
  case 'weekcart':{let cart={};for(const m of weekMenu())cart[m.id]=(cart[m.id]||0)+portions;save('cart',cart);foodView='cart';draw();break;}case 'cartclear':save('cart',{});draw();break;
- case 'mealaction':recipeChoice=v;taskKind='food';activeGame='';route('action');break;
+ case 'mealaction':reply=null;privateAction=true;recipeChoice=v;taskKind='food';activeGame='';route('action');break;
  case 'gear':save('equip',v);draw();break;case 'work':if(trainingKey!==v||(!activeSet&&timerBudget!==Math.min(time,work(v).mins))){stopTimer();left=Math.min(time,work(v).mins)*60;trainingKey=v;timerBudget=Math.min(time,work(v).mins);}route('work',v);break;
  case 'timer':if(activeSet)stopTimer();else{activeSet=true;const end=Date.now()+left*1000;activeClock=setInterval(()=>{left=Math.max(0,Math.ceil((end-Date.now())/1000));if($('#timer'))$('#timer').textContent=timeText();if(!left){stopTimer();if(view==='work')draw();notice('Отрезок завершён.');}},250);}draw();break;
  case 'timerreset':stopTimer();left=Math.min(time,work(detail).mins)*60;draw();break;case 'tech':route('tech',v);break;
- case 'workdone':{sets=Number($('#sets').value);reps=Number($('#reps').value);if(!Number.isInteger(sets)||sets<1||sets>50||!Number.isInteger(reps)||reps<1||reps>300)throw Error('Проверь число подходов и повторений.');stopTimer();pendingWorkout={workout:v,sets,reps};reply=null;privateAction=true;taskKind=v==='walk'?'walk':'move';activeGame='';route('action');break;}
+ case 'workdone':{sets=v==='walk'?1:Number($('#sets').value);reps=v==='walk'?1:Number($('#reps').value);if(!Number.isInteger(sets)||sets<1||sets>50||!Number.isInteger(reps)||reps<1||reps>300)throw Error('Проверь число подходов и повторений.');stopTimer();pendingWorkout={workout:v,sets,reps};reply=null;privateAction=true;taskKind=v==='walk'?'walk':'move';time=Math.min(time,work(v).mins);activeGame='';route('action');break;}
+ case 'solo':if(Object.hasOwn(SoloPlans,v))route('solo',v);break;
+ case 'solo-start':if(!Object.hasOwn(SoloPlans,v))break;
+   await write('solo-select',{plan:v});save('entered',true);stack=[['today','']];return handle('solo-next:'+v);
+ case 'solo-next':if(!Object.hasOwn(SoloPlans,v))break;
+   if(v==='kitchen'){mt='Ужин';foodView='recipes';onlyFav=false;qPantry=false;portions=1;route('food');}
+   else return handle('work:'+v);
+   break;
  case 'expert':route('expert',v);break;case 'product':route('product',v);expose('offers');break;
  case 'book':if(!await expose('offers'))throw Error('Не удалось открыть предложение. Проверь связь и повтори.');await write('book',{sku:v});draw();notice(demo?'Демозаявка сохранена.':'Заявка сохранена.');break;
  case 'refund-review':if(demo&&seatActive())homeSheet('Вернуть оплату за сезон?',muted('Учебный возврат закроет доступ к сопровождению. Бесплатные разделы останутся доступны.')+b('Вернуть '+num((S.booking.paid_kopeks-S.booking.refunded_kopeks)/100)+' ₽ в демо','receipt:refund','btn full')+b('Оставить сезон','sheetclose','textbtn full'));break;
@@ -366,13 +403,13 @@ document.addEventListener('click',async ev=>{
    if(!ready){notice('Открываем приложение…');await startup;if(!ready)return;}
    if(el.dataset.a!=='redraw')notice('');
    await handle(el.dataset.a);
-   if(view==='dna')sessionStorage.setItem(key('onboarding'),JSON.stringify({step,draft}));
-   else if(view==='dna-map'&&el.dataset.a==='dnanext')sessionStorage.removeItem(key('onboarding'));
+   if(view==='dna')sessionStorage.setItem(key('onboarding'),JSON.stringify({step,mode:formMode,draft}));
+
  }catch(err){if(err.name!=='AbortError')notice(err.message||'Попробуй ещё раз.');}
  finally{clearTimeout(indicator);if(el.hasAttribute('aria-busy')){el.removeAttribute('aria-busy');el.disabled=false;}busy=false;}
 });
 document.addEventListener('input',ev=>{if(ev.target.id==='duel-reward')duelReward=ev.target.value;
- if(view==='dna'&&ev.target.id==='customLimit'){draft.custom=ev.target.value;sessionStorage.setItem(key('onboarding'),JSON.stringify({step,draft}));}});
+ if(view==='dna'&&ev.target.id==='customLimit'){draft.custom=ev.target.value;sessionStorage.setItem(key('onboarding'),JSON.stringify({step,mode:formMode,draft}));}});
 document.addEventListener('input',ev=>{if(lifecycle&&view==='league-review'&&ev.target.id==='lc-editor')lifecycle.edit(detail,ev.target.value);});
 document.addEventListener('change',ev=>{const el=ev.target;if(el.id==='pulse-haptics')save('pulseHaptics',el.checked);if(el.id==='visible')privateAction=!el.checked;if(el.dataset.pref){let o=read('notifs')||{};o[el.dataset.pref]=el.checked;save('notifs',o);}});
 async function init(){S=await api('/api/me');if(!S.allocation)await write('allocate',{channel:pendingGuest||new URLSearchParams(location.search).has('choice')?'friend':new URLSearchParams(location.search).get('channel')||'direct'});const saved=read('available');time=(saved?.day===S.day?saved.minutes:null)||S.season?.plan.duration||Number(S.dna?.minutes)||20;
@@ -380,14 +417,15 @@ async function init(){S=await api('/api/me');if(!S.allocation)await write('alloc
  if(await choice.initialize(query)){/* The invitation supplies the first screen for guests. */}
  else if(pendingGuest){try{guestInfo=await api('/api/invite?token='+encodeURIComponent(pendingGuest));view='invite';}catch(err){clearInvite();notice(err.message);}}
  else if(demo&&['season-story','league-desk'].includes(query.get('screen'))){await seed();save('entered',true);view=query.get('screen');stack=[['profile','']];}
+ else if(query.get('screen')==='programs'){view='store';stack=[[read('entered')||S.profile.goal?'today':'intro','']];}
  else if(demo&&query.get('screen')==='reset-league'){await seed();save('entered',true);view='product';detail='RESET';stack=[['today',''],['arena','']];}
  else if(demo&&new URLSearchParams(location.search).get('screen')==='today'){await seed();save('entered',true);view='today';if(query.get('feature')==='choice')choice.start();}
  else if(readQuestionnaire()&&!readQuestionnaire().paused){
-   const saved=readQuestionnaire();step=saved.step;draft=saved.draft;view='dna';
+   const saved=readQuestionnaire();formMode=saved.mode||'full';step=saved.step;draft=saved.draft;view='dna';
  }
- else if(read('entered')||S.profile.goal){view='today';}
+ else if(read('entered')||S.profile.goal||programs.current()){view='today';}
  ready=true;draw();if(view==='intro')expose('intro');
- setInterval(async()=>{if(busy||document.hidden||!['today','pulse','arena','game','notifications','choice'].includes(view)||document.activeElement?.matches('input,select,textarea'))return;try{const before=S,next=await api('/api/me');if(busy||S!==before)return;const sig=s=>JSON.stringify([s.day,s.feed,s.actions,s.games,s.pulse,s.choices]);if(sig(S)!==sig(next)||(view==='today'&&Math.floor(S.server_time/60)!==Math.floor(next.server_time/60)&&!document.querySelector('dialog[open]'))){const previousSource=incoming()?.source;
+ setInterval(async()=>{if(busy||document.hidden||!['today','pulse','arena','game','notifications','choice'].includes(view)||document.activeElement?.matches('input,select,textarea'))return;try{const before=S,next=await api('/api/me');if(busy||S!==before)return;const sig=s=>JSON.stringify([s.day,s.feed,s.actions,s.games,s.pulse,s.choices,s.solo]);if(sig(S)!==sig(next)||(view==='today'&&Math.floor(S.server_time/60)!==Math.floor(next.server_time/60)&&!document.querySelector('dialog[open]'))){const previousSource=incoming()?.source;
  const updates=(next.choices||[]).filter(item=>{const old=(before.choices||[]).find(c=>c.id===item.id);return item.completed&&!old?.completed&&item.role==='voter'||item.selected&&!old?.selected&&item.role==='owner'||item.target&&!old&&item.role==='guest';});
  S=next;draw();if(updates.length&&(read('notifs')||{}).pulse!==false){const item=updates[0];notice(item.completed?'Друг выполнил выбранный ход.':item.selected?'Друг выбрал твой ход.':'Друг просит выбрать ответный ход.');}if(incoming()?.source&&incoming().source!==previousSource)document.querySelector('.home-pulse')?.classList.add('pulse-arrived');}}catch{}},5500);
 }
