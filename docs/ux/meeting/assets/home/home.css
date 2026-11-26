@@ -1,0 +1,98 @@
+/* Home is independently reviewable; the shell returns to the pilot theme on other routes. */
+html:has(body.home-active),body.home-active {
+  --home-bg:#0D0E0D; --surface:#171A17; --elevated:#20231F; --accent:#D5FC53;
+  --pulse-surface:#1B2115; --pulse-line:#536331; --text:#F5F6F2; --quiet:#999F96;
+  --divider:#262926; --inactive:#41463D;
+  background:var(--home-bg); color:var(--text);
+}
+.home-active .shell {max-width:460px; min-height:100svh; margin-inline:auto;}
+.home-active {font:500 14px/1.35 "Manrope Variable",Manrope,Inter,system-ui,sans-serif;}
+.home-active #head {height:calc(58px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 16px 0 20px;}
+.home-brand,.home-tools {display:flex; align-items:center;}
+.home-active #head button {display:grid; place-content:center; background:none; border:0; padding:0; min-width:44px; min-height:44px;}
+.home-active #head .home-wordmark {font-size:32px; font-weight:800; color:var(--accent); letter-spacing:-.085em; line-height:1;}
+.home-active #head .home-demo {color:var(--quiet); font-size:10px; letter-spacing:.02em; font-weight:600; align-self:center;}
+.home-tools {gap:1px;}
+.user-photo,.face-ring {display:grid; place-items:center; overflow:hidden; border-radius:50%;}
+.user-photo {width:34px;height:34px;border:1px solid var(--divider);background:var(--surface);}
+.user-photo img,.face-ring img {display:block;width:100%;height:100%;object-fit:cover; border-radius:50%;}
+.home-initial {font-size:17px;color:var(--text);}
+.home-active main {padding:2px 20px calc(81px + env(safe-area-inset-bottom));min-height:unset;}
+.home-title time,.home-eyebrow {color:var(--quiet);font-size:11px;line-height:16px;letter-spacing:.06em;font-weight:600;text-transform:uppercase;}
+.home-title h1 {font-size:32px;line-height:1.12;letter-spacing:-.055em;font-weight:740;margin:6px 0 0;}
+.home-active .home-week {margin-top:17px;padding:0 2px 15px 0;border-bottom:1px solid var(--divider);width:100%;display:flex;justify-content:space-between;align-items:center;gap:14px;text-align:left;cursor:pointer;border-radius:0;}
+.week-values {flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;}
+.week-values>strong {display:block;font-weight:720;font-size:50px;letter-spacing:-.07em;line-height:1.02;font-variant-numeric:tabular-nums;margin:0 0 2px;}
+.week-values em {font-size:.79em;letter-spacing:-.075em;color:var(--accent);font-style:normal;font-weight:630;}
+.week-caption {color:var(--quiet);font-size:12px;line-height:17px;}
+.home-ring {width:98px;height:98px;flex:none;}
+.home-ring circle,.home-ring path {fill:none;stroke-linecap:round;}
+.home-ring .track,.home-ring .progress {stroke-width:6.5px;}
+.home-ring .track {stroke:var(--divider);}
+.home-ring .progress {stroke:var(--accent);transition:stroke-dasharray .2s;}
+.home-ring .inner {stroke:var(--inactive);stroke-width:1.8px;}
+.home-ring path {stroke:var(--accent);stroke-width:2.4px;stroke-linejoin:miter;}
+.day-bars {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));width:100%;max-width:226px;gap:4px;margin-top:5px;}
+.day-bars>span {display:grid;gap:3px;text-align:center;}
+.day-bars i {position:relative;display:block;overflow:hidden;height:15px;border-radius:4px;background:var(--divider);}
+.day-bars i:before {content:"";display:block;width:var(--fill);height:100%;background:var(--accent);border-radius:inherit;}
+.day-bars small {font-size:10px;line-height:12px;color:var(--quiet);}
+.home-content h2 {font-size:20px;line-height:1.2;font-weight:720;letter-spacing:-.045em;margin:0;}
+.home-circle {padding-top:9px;}
+.home-section-head {display:flex;align-items:center;justify-content:space-between;min-height:44px;}
+.home-section-head button {display:flex;align-items:center;justify-content:flex-end;gap:4px;min-width:48px;padding:0 2px;color:var(--accent);font-size:13px;}
+.home-people {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));justify-content:space-between;gap:6px;}
+.home-member {display:flex;min-width:0;flex-direction:column;align-items:center;gap:0;padding:1px 0 3px;line-height:1.18;}
+.face-ring {width:50px;height:50px; padding:2px;border:1.5px solid var(--inactive);background:var(--home-bg); margin-bottom:6px;}
+.face-ring.lit {border-color:var(--accent);}
+.home-member b,.home-member small {max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.home-member b {font-size:13px;line-height:17px;font-weight:650;}
+.home-member small {color:var(--quiet);font-size:11px;line-height:15px;}
+.home-member.invite .face-ring {border-color:var(--divider);color:var(--accent);}
+.home-pulse {margin:17px 0 17px;background:var(--pulse-surface);border:1px solid var(--pulse-line);border-radius:19px;padding:12px 14px 10px;min-height:116px;display:grid;align-content:space-between;gap:5px;}
+.pulse-stamp,.pulse-foot,.pulse-foot button {display:flex;align-items:center;}
+.pulse-stamp {color:var(--accent);gap:6px;text-transform:uppercase;font-weight:700;font-size:10.5px;line-height:16px;letter-spacing:.055em;}
+.home-pulse h2 {font-size:19px;line-height:1.23;font-weight:680;letter-spacing:-.035em;}
+.pulse-foot {justify-content:space-between;gap:8px;color:var(--quiet);font-size:13px;}
+.pulse-foot button {justify-content:center;gap:6px;min-height:44px;border-radius:28px;padding:0 16px;background:var(--accent);color:var(--home-bg);font-size:13px;font-weight:750;}
+.home-agenda>h2 {margin-bottom:4px;}
+.home-plan-row {width:100%;min-height:88px;padding:8px 1px 8px 0;display:flex;align-items:center;text-align:left;gap:11px;border-bottom:1px solid var(--divider);border-radius:0;}
+.row-photo {width:73px;height:73px;object-fit:cover;object-position:center;flex:none;border-radius:11px;}
+.home-plan-row:last-child .row-photo {object-position:48% 44%;}
+.row-text {min-width:0; flex:1;display:grid;gap:4px;}
+.row-text small {font-weight:550;letter-spacing:.035em;color:var(--quiet);font-size:10.5px;}
+.row-text b {font-size:16px;font-weight:690;line-height:1.2;letter-spacing:-.03em;}
+.row-text span {font-size:12px;color:var(--quiet);}
+.home-plan-row>.i {color:var(--accent);}
+.home-active #nav {max-width:460px;background:var(--home-bg);height:calc(64px + env(safe-area-inset-bottom));padding:1px 9px calc(1px + env(safe-area-inset-bottom));border-color:var(--divider);align-items:center;}
+.home-active #nav button {height:52px;display:flex;align-items:center;justify-content:center;color:var(--quiet);gap:0;}
+.home-active #nav button.active {color:var(--accent);}
+.home-active #nav button span {position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;}
+.home-active #nav .pulse-nav svg {width:46px!important;height:46px!important;background:var(--accent);color:var(--home-bg);padding:11px;border-radius:50%;stroke-width:1.85;}
+.home-active #nav svg {width:23px!important;height:23px!important;}
+.home-sheet {background:var(--surface);color:var(--text);border:1px solid var(--divider);border-radius:20px;padding:18px 18px 20px;width:min(350px,calc(100vw - 32px));max-height:80svh;overflow:auto;}
+.home-sheet::backdrop {background:rgb(0 0 0 / .68);}
+.home-sheet .sheet-top {display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.home-sheet h2 {margin:0;font-size:21px;}
+.home-sheet .sheet-top button {width:44px;}
+.home-sheet p {color:var(--quiet);margin:7px 0 13px;}
+.home-sheet .sheet-links {display:grid;gap:4px;margin-top:10px;}
+.home-sheet .sheet-links button {display:flex;align-items:center;justify-content:space-between;text-align:left;padding:8px 0;border-bottom:1px solid var(--divider);}
+.home-active .screen {animation:home-enter .18s ease-out;}
+@keyframes home-enter {from{opacity:.85}to{opacity:1}}
+@media (max-width:380px) {.home-active main{padding-inline:18px}.home-active #head{padding-left:18px}.home-ring{width:92px;height:92px;}}
+@media (prefers-reduced-motion:reduce) {.home-active *,.home-active *::before{animation:none!important;transition:none!important;}}
+
+.home-pulse.fired {animation:home-sent .23s ease-out;}
+@keyframes home-sent {from{border-color:var(--accent);}to{border-color:var(--pulse-line);}}
+
+@media (max-height:860px) {
+  .home-active .home-week {padding-bottom:12px;}
+  .home-agenda .home-plan-row {min-height:85px;padding-block:6px;}
+}
+@media (max-height:820px) {
+  .home-active #head {height:calc(51px + env(safe-area-inset-top));}
+  .home-active .home-week {margin-top:12px;padding-bottom:8px;}
+  .home-circle {padding-top:4px;}
+  .home-pulse {margin:12px 0;}
+}
