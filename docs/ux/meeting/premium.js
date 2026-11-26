@@ -358,7 +358,7 @@ function clearInvite(){pendingGuest=null;guestInfo=null;const u=new URL(location
 async function seasonSave(){const existing=S.season,d=S.dna||{},plan=existing?{...existing.plan}:{focus:d.goal||'Регулярность тренировок',duration:Number(d.minutes)||20,place:d.place||'Дома',equipment:d.gear||'Без оборудования',adaptation:'Подойдёт привычная нагрузка',food_for:'Для себя',cooking:'15 минут',budget:d.budget||'Важна доступная цена'};plan.days=Number($('#days').value);let v=id=>$(id)?.value?Number($(id).value):null;
 await write('season',{plan,comparison:existing?existing.comparison:($('#comp')?.value||''),baseline:existing?existing.baseline:v('#base'),target:v('#target')});save('days',plan.days);notice('Условия сезона сохранены.');route('profile');}
 async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(cmd!=='time')document.getElementById('home-sheet')?.close();if(!['complete','time','short','kind','workdone'].includes(cmd))pendingWorkout=null;if(cmd.startsWith('choice-'))return choice.handle(cmd,v,detail);if(lifecycle&&cmd.startsWith('life-'))return lifecycle.handle(cmd,v);switch(cmd){
- case 'go':if(v==='store'&&view!=='store')programs.filter('reset');if(view==='choice'||view==='choice-compose')choice.clearAddress();if(v==='today'&&view==='intro')save('entered',true);if(v==='train'&&view==='today')trainingKey='';route(v);if(v==='pulse')heartbeat();break;
+ case 'go':if(v==='store'&&view!=='store')programs.filter('reset');if(view==='choice'||view==='choice-compose')choice.clearAddress();if(v==='today'&&view==='intro')save('entered',true);route(v);if(v==='pulse')heartbeat();break;
  case 'sheetclose':document.getElementById('home-sheet')?.close();break;
  case 'quicktime':showHomeTime();break;
  case 'homeplan':showHomePlan();break;
@@ -375,7 +375,7 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
  }
  case 'start-goal':
    if(!quickQuestions[0][2].includes(v))break;
-   expose('start');draft={...S.dna,goal:v};formMode='quick';step=0;if(view==='dna')draw();else route('dna');break;
+   expose('start');draft={...(view==='dna'?draft:S.dna),goal:v};formMode='quick';step=0;if(view==='dna')draw();else route('dna');break;
  case 'back':back();break;case 'start':expose('start');draft={...S.dna};formMode='quick';step=0;route('dna');break;
  case 'named':{const name=$('#startname').value.trim();if(!name)throw Error('Введи имя для друзей.');await write('profile',{name,goal:S.profile.goal||'Регулярное движение',barrier:S.profile.barrier||'Мало времени',program:S.profile.program||'Своя программа'});draft={...S.dna};formMode='quick';step=0;route('dna');break;}
  case 'editdna':{
