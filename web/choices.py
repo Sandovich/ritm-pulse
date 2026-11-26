@@ -153,6 +153,8 @@ def operate(c, person, verb, b, t, *, log, day, finish, minutes_allowed):
         ensure(row['voter'] and not expired(row,t), 'Дождитесь выбора друга или создайте новый ход.')
         option = next(x for x in json.loads(row['options']) if x['id']==row['selected'])
         action = finish(option['kind'],row['minutes'])
+        recorded_at = c.execute('SELECT at FROM actions WHERE id=?',(action,)).fetchone()[0]
+        ensure(recorded_at >= row['voted'], 'Это дело уже было отмечено до выбора друга. Можно выполнить новый ход завтра, пока открыто приглашение.')
         ensure(not c.execute('SELECT 1 FROM choices WHERE action=?',(action,)).fetchone(),
                'Это дело уже зачтено в другом ходе сегодня. Вернитесь завтра, пока ход открыт.')
         c.execute('UPDATE choices SET completed=?,action=? WHERE id=?',(t,action,row['id']))

@@ -104,6 +104,15 @@ class ChoiceTest(unittest.TestCase):
         self.assertEqual(sum(e['kind']=='choice_copied' for e in events),1)
         self.assertEqual(sum(e['kind']=='choice_shared' for e in events),1)
 
+    def test_choice_requires_action_after_ballot(self):
+        invite = self.make()
+        self.op('a','done',T+2,kind='walk',task='walk',minutes=10)
+        self.op('b','choice_vote',T+5,token=invite['token'],option='walk')
+        with self.assertRaisesRegex(ValueError,'до выбора друга'):
+            self.op('a','choice_complete',T+10,id=invite['id'])
+        self.assertIsNone(self.snap('a',T+11)['choices'][0]['completed'])
+        self.assertEqual(self.count('choice_push_queue'),0)
+
     def test_funnel_cutoff_swap_and_mature_pairs(self):
         first=self.make()
         self.op('a','choice_share',T+1,id=first['id'],method='copy')
