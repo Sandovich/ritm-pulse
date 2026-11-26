@@ -1,17 +1,18 @@
-﻿"""python analysis/import-social.py web/pilot-local.sqlite analysis/field.sqlite
+"""python analysis/import-social.py web/pilot-local.sqlite analysis/field.sqlite
 Добавляет серверные события в локальную базу аналитики. Сессии и ссылки не копируются.
 """
 import argparse,sqlite3
+from contextlib import closing
 from pathlib import Path
 from datetime import datetime,timezone
 def stamp(t):return datetime.fromtimestamp(t,timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 def sync(source,target):
     if not Path(source).is_file() or Path(source).resolve()==Path(target).resolve():raise ValueError('Укажите разные пути и существующую базу сервера')
-    with sqlite3.connect(Path(source).resolve().as_uri()+'?mode=ro',uri=True) as src,sqlite3.connect(target) as dst:
+    with closing(sqlite3.connect(Path(source).resolve().as_uri()+'?mode=ro',uri=True)) as src, closing(sqlite3.connect(target)) as dst, dst:
         src.execute('BEGIN');dst.execute('PRAGMA foreign_keys=ON')
         if not dst.execute("SELECT 1 FROM sqlite_master WHERE name='people'").fetchone():dst.executescript(Path(__file__).with_name('pilot-schema.sql').read_text('utf-8-sig'))
         for pid,first in src.execute("SELECT person,MIN(at) FROM events WHERE kind='visitor_created' GROUP BY person"):
-            view=src.execute("SELECT min(at) FROM events WHERE person=? AND kind='invite_viewed'",(pid,)).fetchone()[0]
+            view=src.execute("SELECT min(at) FROM events WHERE person=? AND kind IN ('invite_viewed','choice_opened','choice_voted')",(pid,)).fetchone()[0]
             # Аналитическая атрибуция гостевого входа: переход по приглашению в первые 60 секунд.
             guest=int(view is not None and first<=view<=first+60)
             dst.execute('INSERT INTO people VALUES(?,?,?,?) ON CONFLICT(person) DO UPDATE SET channel=excluded.channel,guest=excluded.guest',(pid,stamp(first),'invite' if guest else 'direct_unknown',guest))

@@ -49,25 +49,40 @@ def can_send(c,aid,recipient,t):
     JOIN games g ON g.id=owner.game AND g.mode='circle' JOIN members m ON m.game=g.id
     WHERE a.id=? AND m.person=? AND a.at>? AND a.at>=m.joined AND a.at>=owner.joined
     AND NOT EXISTS(SELECT 1 FROM hidden_actions h WHERE h.action=a.id)""",(aid,recipient,t-86400)).fetchone() is not None
-def deliver(sub):
+def deliver(sub,payload=None):
     from pywebpush import webpush
     from py_vapid import Vapid02
     signer=Vapid02.from_pem(os.environ['RITM_VAPID_PEM'].encode())
-    webpush(subscription_info=sub,data=json.dumps({'type':'pulse'}),vapid_private_key=signer,
+    webpush(subscription_info=sub,data=json.dumps(payload if payload is not None else {'type':'pulse'}),vapid_private_key=signer,
             vapid_claims={'sub':os.environ['RITM_PUSH_CONTACT']},ttl=3600,timeout=7)
 def drain(c,t,send=deliver):
-    row=c.execute("""SELECT q.action,q.recipient,q.endpoint,q.attempts,s.subscription FROM push_queue q
-        JOIN push_subs s USING(endpoint) WHERE next_at<=? ORDER BY next_at LIMIT 1""",(t,)).fetchone()
+    row=c.execute("""SELECT kind,subject,recipient,endpoint,attempts,subscription FROM (
+        SELECT 'pulse' AS kind,q.action AS subject,q.recipient,q.endpoint,q.attempts,s.subscription,q.next_at
+        FROM push_queue q JOIN push_subs s ON s.endpoint=q.endpoint AND s.person=q.recipient
+        UNION ALL
+        SELECT 'choice',q.choice,q.recipient,q.endpoint,q.attempts,s.subscription,q.next_at
+        FROM choice_push_queue q JOIN push_subs s ON s.endpoint=q.endpoint AND s.person=q.recipient
+        ) WHERE next_at<=? ORDER BY next_at LIMIT 1""",(t,)).fetchone()
     if not row:return False
-    aid,p,endpoint,tries,sub=row
-    if can_send(c,aid,p,t):
-        try:send(json.loads(sub))
+    kind,subject,p,endpoint,tries,sub=row
+    if kind=='choice':
+        table,column='choice_push_queue','choice'
+        allowed=c.execute('SELECT 1 FROM choices WHERE id=? AND voter=? AND completed>?',(subject,p,t-86400)).fetchone()
+    else:
+        table,column='push_queue','action'
+        allowed=can_send(c,subject,p,t)
+    if allowed:
+        try:
+            if kind=='choice':send(json.loads(sub),{'type':'choice','choice':subject})
+            else:send(json.loads(sub))
         except Exception as exc:
             code=getattr(getattr(exc,'response',None),'status_code',None)
             if code in (404,410):c.execute('DELETE FROM push_subs WHERE endpoint=?',(endpoint,))
             elif tries<3:
-                c.execute('UPDATE push_queue SET attempts=attempts+1,next_at=? WHERE action=? AND endpoint=?',(t+30*(2**tries),aid,endpoint));return True
-    c.execute('DELETE FROM push_queue WHERE action=? AND endpoint=?',(aid,endpoint));return True
+                c.execute(f'UPDATE {table} SET attempts=attempts+1,next_at=? WHERE {column}=? AND endpoint=?',(t+30*(2**tries),subject,endpoint))
+                return True
+    c.execute(f'DELETE FROM {table} WHERE {column}=? AND endpoint=?',(subject,endpoint))
+    return True
 def run(db_path):
     with sqlite3.connect(db_path,timeout=12) as c:
         c.execute('PRAGMA foreign_keys=ON')

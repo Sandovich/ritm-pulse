@@ -40,7 +40,7 @@ def request(raw):
                 game=core.one(c,'SELECT g.*,p.name FROM games g JOIN people p ON p.id=g.host WHERE token=?',(token,))
                 core.need(game,'Приглашение доступно в браузере, в котором создана игра.')
                 core.log(c,actor,t,'invite_viewed',game['id'],nonce=game['id'])
-                result={'mode':game['mode'],'name':game['name'],'open':core.joinable(c,game,t),'member':bool(core.one(c,'SELECT 1 FROM members WHERE game=? AND person=?',(game['id'],actor))),'proposed':game['proposed']}
+                result={'mode':game['mode'],'name':game['name'],'open':core.joinable(c,game,t),'member':bool(core.one(c,'SELECT 1 FROM members WHERE game=? AND person=?',(game['id'],actor))),'proposed':game['proposed'],'reward':core.choices.reward(c,game['id']) if game['mode']=='duel' else ''}
             else:raise ValueError('Этот режим доступен на сервере RITM.')
             if isinstance(result,dict) and "profile" in result:
                 result["home_plan"]=home_plan(c,actor,t)

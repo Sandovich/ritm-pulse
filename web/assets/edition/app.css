@@ -152,3 +152,46 @@ body[data-screen="game"] .edition-face {width:36px;height:36px;}
     58% { transform: scale(1.13); }
   }
 }
+
+/* PULSE CHOICE uses the same surfaces, typography and motion budget as Today. */
+.choice-flow {padding:10px 0 4px;overflow-wrap:anywhere}
+.choice-flow>.cap {color:var(--accent)}
+body .choice-flow h1 {margin:12px 0 10px;max-width:19ch}
+.choice-lead,.choice-question {margin:8px 0 18px;font-size:15px;line-height:1.5}
+.choice-lead {color:var(--quiet)}
+.choice-flow .between {align-items:baseline}
+.choice-options {display:grid;gap:9px;margin-block:10px 16px}
+.choice-option {width:100%;padding:14px;min-height:68px;display:flex;align-items:center;gap:12px;text-align:left;background:var(--elevated);color:var(--ink);border:1px solid var(--divider);border-radius:16px;}
+.choice-option>.i,.choice-modes .i,.choice-history button>.i:first-child,.duel-reward>.i {color:var(--accent);flex:none}
+.choice-option>span,.choice-modes button>span,.choice-history button>span,.duel-reward>span,.choice-sender>div {display:grid;gap:3px;min-width:0}
+.choice-option b,.choice-history b {font-size:15px;line-height:1.28}
+.choice-option small,.choice-sender small,.choice-history small,.choice-modes small,.duel-reward small {font-size:12px;line-height:1.4;color:var(--quiet)}
+.choice-option[aria-pressed=true] {border-color:var(--pulse-line);background:var(--pulse-surface)}
+.choice-option[disabled] {opacity:.64}
+.choice-tick {margin-left:auto;flex:none;width:18px;height:18px;border:1.5px solid var(--quiet);border-radius:50%;display:grid;place-content:center}
+.choice-option[aria-pressed=true] .choice-tick {background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.choice-result {margin-block:15px}
+.choice-sender {display:flex;align-items:center;gap:12px;margin:20px 0}
+.choice-sender .edition-face {width:48px;height:48px;flex:none}
+.choice-sender b {font-size:16px}
+.choice-flow .btn,.choice-flow .linebtn {margin-top:8px}
+.choice-submit:disabled {background:var(--elevated);color:var(--quiet);cursor:default}
+.choice-demo-note {margin-block:14px 0}
+.choice-link {display:grid;gap:4px;margin-block:16px;font-size:12px}
+.choice-link input {width:100%;min-width:0;text-overflow:ellipsis}
+.choice-modes {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:14px 0 18px}
+.choice-modes button {display:flex;align-items:flex-start;gap:8px;min-height:66px;padding:11px 8px;text-align:left;background:var(--surface);border:1px solid var(--divider);border-radius:12px;color:var(--ink)}
+.choice-modes button:first-child {background:var(--pulse-surface);border-color:var(--pulse-line)}
+.choice-modes small,.duel-reward small {letter-spacing:.055em;font-size:10px}
+.choice-modes b {font-size:12px;line-height:1.3}
+.choice-history button {display:flex;align-items:center;width:100%;gap:12px;text-align:left;padding:12px 0;color:var(--ink);border:0;border-bottom:1px solid var(--divider);background:transparent}
+.choice-history button>.i:last-child {margin-left:auto;flex:none;color:var(--quiet)}
+.duel-reward {display:flex;align-items:center;gap:10px;margin:10px 0;padding:10px 0;border-top:1px solid var(--divider);overflow-wrap:anywhere;text-align:left}
+.duel-reward b {font-size:14px}
+@media (prefers-reduced-motion:no-preference) {
+  .choice-option,.choice-tick {transition:background-color .16s,border-color .16s}
+}
+
+.choice-ballot .choice-flow>.cap {display:none}
+.choice-ballot .choice-sender {margin-top:3px}
+.choice-ballot #content {padding-bottom:calc(24px + var(--inset-b))}

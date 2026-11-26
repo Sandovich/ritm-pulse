@@ -20,6 +20,7 @@ sys.path.insert(0,str(ROOT))
 import journey
 import season
 import notifications
+import choices
 MSK = timezone(timedelta(hours=3))
 GOALS = ('Физическая форма','Регулярное движение','Питание','Прогулки')
 BARRIERS = ('Мало времени','Меняется график','Сложно начать одному','Трудно решить, что приготовить')
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS replies(game TEXT REFERENCES games(id),source_action 
 CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY,person TEXT REFERENCES people(id),at INTEGER NOT NULL,kind TEXT NOT NULL,game TEXT,minutes INTEGER,nonce TEXT,UNIQUE(person,kind,nonce));
 CREATE TABLE IF NOT EXISTS requests(person TEXT NOT NULL,nonce TEXT NOT NULL,verb TEXT NOT NULL,result TEXT NOT NULL,PRIMARY KEY(person,nonce));
 """
-SQL += season.SCHEMA + notifications.SCHEMA + journey.SCHEMA
+SQL += season.SCHEMA + notifications.SCHEMA + journey.SCHEMA + choices.SCHEMA
 FOOD += journey.EXTRA_FOOD
 
 def now(): return datetime.now(timezone.utc).timestamp()
@@ -81,11 +82,17 @@ def snapshot(c,who,t):
                 answered=bool(source and one(c,'SELECT 1 FROM replies WHERE game=? AND source_action=? AND person=?',(g['id'],source,who)))
                 for_you=bool(source and one(c,'SELECT 1 FROM replies r JOIN actions a ON a.id=r.source_action WHERE r.game=? AND r.reply_action=? AND a.person=?',(g['id'],source,who)))
                 circles.append({'for_you':for_you,'game':g['id'],'person':m['id'],'name':m['name'],'count':a[0],'at':latest['at'] if latest else None,'source':source,'kind':latest['kind'] if latest else None,'answered':answered})
+        if g['mode']=='duel':g['reward']=choices.reward(c,g['id'])
         g['active']=live(g,t);g['invite_open']=joinable(c,g,t)
         if who!=g['host']:g.pop('token')
-    return dict(**journey.extra(c,who,t),**season.state(c,who,t),push_key=notifications.public_key(),profile=profile,day=str(day(t)),server_time=t,games=games,pulse=circles,
+    return dict(**choices.state(c,who,t),**journey.extra(c,who,t),**season.state(c,who,t),push_key=notifications.public_key(),profile=profile,day=str(day(t)),server_time=t,games=games,pulse=circles,
        actions=rows(c,'SELECT id,kind,minutes,task,label,at,NOT EXISTS(SELECT 1 FROM hidden_actions h WHERE h.action=actions.id) AS shared FROM actions WHERE person=? AND day=? ORDER BY at',(who,str(day(t)))))
-def operate(c,who,verb,b,t):
+def operate(c,who,verb,b,t,*,choice_guest=False):
+    if verb in ('choice_create','choice_open','choice_vote','choice_complete','choice_share'):
+        def finish(kind,minutes):
+            task=choices.FOOD_TASK if kind=='food' else kind
+            return operate(c,who,'done',{'kind':kind,'minutes':minutes,'task':task,'visibility':'private'},t,choice_guest=True)['action']
+        return choices.operate(c,who,verb,b,t,log=log,day=day,finish=finish,minutes_allowed=MINUTES)
     if verb in ('dna','interest','cheer'):return journey.operate(c,who,verb,b,t)
     if verb in ('allocate','exposure','season','checkin','book'):return season.operate(c,who,verb,b,t)
     if verb=='subscribe':notifications.subscribe(c,who,b.get('subscription'));return {}
@@ -102,7 +109,7 @@ def operate(c,who,verb,b,t):
         if who==g['host']:
             c.execute('UPDATE games SET host=?,token=?,expires=? WHERE id=?',(nxt[0] if nxt else who,ident(),t+86400 if nxt else t,gid))
         log(c,who,t,'circle_left',gid);return {}
-    if verb in ('done','create'):
+    if verb in ('done','create') and not choice_guest:
         need(one(c,'SELECT goal FROM people WHERE id=?',(who,))[0] or one(c,'SELECT 1 FROM members WHERE person=?',(who,)), 'Сначала настройте личный план в профиле или примите приглашение друга.')
     if verb=='profile':
         name=str(b.get('name','')).strip();need(1<=len(name)<=30,'Имя должно содержать от 1 до 30 знаков.')
@@ -116,6 +123,7 @@ def operate(c,who,verb,b,t):
             src=one(c,'SELECT id,minutes FROM actions WHERE person=? AND day=? AND kind=? ORDER BY at DESC LIMIT 1',(who,str(day(t)),kind))
             need(src is not None,'Сначала выполните своё действие этого вида.')
         gid,token=ident(),ident();c.execute('INSERT INTO games VALUES(?,?,?,?,?,?,?,?)',(gid,token,mode,who,t,t+86400,None,slot))
+        choices.set_reward(c,gid,mode,b.get('reward'))
         c.execute('INSERT INTO members VALUES(?,?,?,?)',(gid,who,kind,t))
         if mode=='relay':c.execute('INSERT INTO marks VALUES(?,?,?,?)',(gid,who,str(day(t)),src['id']))
         log(c,who,t,mode+'_offered',gid,nonce=gid);return {'game':gid}
@@ -133,7 +141,7 @@ def operate(c,who,verb,b,t):
     if verb=='done':
         kind=enum(b.get('kind'),KINDS,'Выберите вид действия.'); minutes=enum(b.get('minutes'),MINUTES,'Выберите время.')
         variant=enum(b.get('variant','original'),('original','alternative'),'Проверьте вариант.')
-        task=b.get('task','');need(isinstance(task,str) and (task in ('move','walk') if kind!='food' else task in FOOD) and (kind=='food' or task==kind),'Выберите предложенное действие.')
+        task=b.get('task','');need(isinstance(task,str) and (task in ('move','walk') if kind!='food' else task in FOOD or (choice_guest and task==choices.FOOD_TASK)) and (kind=='food' or task==kind),'Выберите предложенное действие.')
         gref=b.get('game')
         if gref:
             g=one(c,'SELECT g.*,m.kind AS mykind FROM games g JOIN members m ON g.id=m.game WHERE g.id=? AND m.person=?',(gref,who))
@@ -249,7 +257,7 @@ class Handler(BaseHTTPRequestHandler):
                 from urllib.parse import parse_qs
                 token=parse_qs(urlsplit(self.path).query).get('token',[''])[0]
                 g=one(c,'SELECT g.*,p.name FROM games g JOIN people p ON p.id=g.host WHERE token=?',(token,));need(g,'Приглашение не найдено.')
-                log(c,who,t,'invite_viewed',g['id'],nonce=g['id']);v={'mode':g['mode'],'name':g['name'],'open':joinable(c,g,t),'member':bool(one(c,'SELECT 1 FROM members WHERE game=? AND person=?',(g['id'],who))),'proposed':g['proposed']}
+                log(c,who,t,'invite_viewed',g['id'],nonce=g['id']);v={'mode':g['mode'],'name':g['name'],'open':joinable(c,g,t),'member':bool(one(c,'SELECT 1 FROM members WHERE game=? AND person=?',(g['id'],who))),'proposed':g['proposed'],'reward':choices.reward(c,g['id']) if g['mode']=='duel' else ''}
             else: v=snapshot(c,who,t)
             c.commit();self.respond(200,v,cookie=cookie)
         except (ValueError,TypeError) as e:c.rollback();self.respond(400,{'error':str(e)})
