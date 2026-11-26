@@ -10,7 +10,7 @@ def request(raw):
     query=json.loads(raw)
     route=urlsplit(query['path'])
     actor='demo-'+('friend' if query['actor']=='friend' else 'owner')
-    t=core.now()
+    t=query.get('clock') or core.now()
     with closing(sqlite3.connect('/device.sqlite')) as c:
         c.row_factory=sqlite3.Row
         c.execute('PRAGMA foreign_keys=ON')

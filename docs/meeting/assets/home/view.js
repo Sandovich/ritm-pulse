@@ -5,7 +5,7 @@ window.RitmHome = (() => {
   });
   const weekLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
   const words = {move:"тренировка", walk:"прогулка", food:"питание"};
-  const image = (name, className="") => '<img class="'+className+'" src="assets/home/'+name+'.webp?v=system1" alt="" draggable="false">';
+  const image = (name, className="") => '<img class="'+className+'" src="assets/home/'+name+'-small.webp?v=1" alt="" draggable="false">';
   const calendarDay = iso => new Date(iso+"T12:00:00Z");
   function week(s, weekly) {
     if (s.season || !s.home_plan?.length) {

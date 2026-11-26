@@ -28,23 +28,37 @@ async function init(){
 }
 const ready=init().then(value=>({value}),error=>({error}));
 async function handle(message){
-  const start=await ready;if(start.error)throw start.error;
+  const start=await ready;if(start.error)return {startupError:true};
   const {runtime,db}=start.value;
   // An IndexedDB write transaction serializes changes across browser tabs.
   return new Promise((resolve,reject)=>{
     let result,failed;
     const tx=db.transaction('state','readwrite');
-    const store=tx.objectStore('state'),get=store.get('database');
+    const store=tx.objectStore('state');
+    const metaRequest=store.get('meeting-state-v1'),get=store.get('database');
     get.onsuccess=()=>{
       try{
-        if(message.path==='/demo/reset'){store.delete('database');result={value:{ok:true}};return;}
+        if(message.path==='/demo/reset'){store.clear();result={value:{ok:true}};return;}
         const disk='/device.sqlite';
         if(get.result)runtime.FS.writeFile(disk,new Uint8Array(get.result));
         else if(runtime.FS.analyzePath(disk).exists)runtime.FS.unlink(disk);
+        const meta=metaRequest.result;
+        if(meta?.anchor)message.clock=meta.anchor+(Date.now()-meta.started)/1000;
         runtime.globals.set('input_json',JSON.stringify(message));
         result=JSON.parse(runtime.runPython('answer(input_json)'));
         const data=runtime.FS.readFile(disk);
         if(!result.error&&(!get.result||message.path!=='/api/me'||!message.initialized))store.put(data,'database');
+        if(!result.error && self.location.pathname.split('/').includes('meeting')){
+          const next=meta||{};
+          // Even a guest write may change the owner’s feed or available actions.
+          if(message.path!=='/api/me' || message.actor==='owner') {
+            next.snapshot=message.actor==='owner' && result.value?.profile ? result.value : null;
+            next.saved=Date.now();
+          }
+          if(message.path!=='/api/me')next.pristine=false;
+          if(message.path==='/demo/seed')next.seeded=true;
+          store.put(next,'meeting-state-v1');
+        }
       }catch(error){failed=error;tx.abort();}
     };
     tx.oncomplete=()=>resolve(result);

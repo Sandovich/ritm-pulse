@@ -8,15 +8,27 @@ if(previewQuery.get('screen')==='today'&&!previewQuery.has('as'))sessionStorage.
 const requested=new URLSearchParams(location.search).get('as');
 if(requested==='owner'||requested==='friend')sessionStorage.setItem(sandboxStorageKey,requested);
 const previewActor=sessionStorage.getItem(sandboxStorageKey)==='friend'?'friend':'owner';
-const previewWorker=new Worker('./worker.js?rev=meeting2'+(homeScenario?'&scenario=home':''));
+let previewWorker;
+function worker(){
+  if (!previewWorker) {
+    previewWorker=new Worker('./worker.js?rev=meeting4'+(homeScenario?'&scenario=home':''));
+    previewWorker.onmessage=receive;previewWorker.onerror=workerError;
+  }
+  return previewWorker;
+}
+if(!meetingRoot)worker();
 const calls=new Map();let requestId=0,initialized=false;
 window.ritmDemo={
   actor:previewActor,
   storagePrefix:meetingRoot?'ritm-ui-meeting-':homeScenario?'ritm-ui-home-':'ritm-ui-demo-',
-  api(path,body){
+  async api(path,body){
+    if(meetingRoot && window.ritmMeetingStart){
+      const value=await window.ritmMeetingStart(path,previewActor);
+      if(value){initialized=true;setTimeout(worker,200);return value;}
+    }
     return new Promise((resolve,reject)=>{
       const id=++requestId;calls.set(id,{resolve,reject});
-      previewWorker.postMessage({id,actor:previewActor,path,body,initialized});
+      worker().postMessage({id,actor:previewActor,path,body,initialized});
     });
   },
   openFriend(token){
@@ -26,11 +38,13 @@ window.ritmDemo={
     return url.href;
   }
 };
-previewWorker.onmessage=({data})=>{
+function receive({data}){
+  if(data.startupError){workerError();return;}
   const call=calls.get(data.id);if(!call)return;calls.delete(data.id);
   if(data.error)call.reject(Error(data.error));else{initialized=true;call.resolve(data.value);}
 };
-previewWorker.onerror=()=>{
+function workerError(){
+  if(previewWorker)previewWorker.terminate();previewWorker=null;
   for(const item of calls.values())item.reject(Error('Не удалось запустить демо. Обновите страницу в обычном браузере.'));
   calls.clear();
 };
