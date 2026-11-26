@@ -51,7 +51,7 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
   }
   const filters={format:'Все',goal:'Все',level:'Все',price:'Все'};
   const facets={
-    format:['Все','Самостоятельно','В группе','С экспертом','Для двоих'],
+    format:['Все','Авторские программы','Самостоятельно','В группе','С экспертом','Для двоих'],
     goal:['Все','Движение','Питание'],level:['Все','Для старта','С опытом','По согласованию'],
     price:['Все','Бесплатно','До 3 500 ₽','От 3 501 ₽']
   };
@@ -76,7 +76,7 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
     });
     entries.splice(1,0,...Object.entries(SoloPlans).map(([id,x])=>({title:x.title,format:'Самостоятельно',goals:[id==='kitchen'?'Питание':'Движение'],price:0,who:'Каталог RITM',level:id==='strength'?'С опытом':'Для старта',term:'3 дня с отметкой',note:x.note,img:x.photo,action:'solo:'+id})));
     entries.push({title:'RITM PLUS',format:'Самостоятельно',goals:['Движение','Питание'],price:plusMonthlyRubles,who:'RITM',level:'Для старта',term:'в месяц · сбор интереса',note:'Самостоятельные программы, рецепты и дневник',img:'edition/mobility',action:'go:plus'});
-    const matches=entries.filter(x=>(filters.format==='Все'||filters.format===x.format)&&(filters.goal==='Все'||x.goals.includes(filters.goal))&&(filters.level==='Все'||x.level===filters.level)&&(filters.price==='Все'||(filters.price==='Бесплатно'?x.price===0:filters.price==='До 3 500 ₽'?x.price>0&&x.price<=3500:x.price>3500)));
+    const matches=entries.filter(x=>(filters.format==='Все'||filters.format===x.format||(filters.format==='Авторские программы'&&['product:RESET','product:FOOD','product:DUO'].includes(x.action)))&&(filters.goal==='Все'||x.goals.includes(filters.goal))&&(filters.level==='Все'||x.level===filters.level)&&(filters.price==='Все'||(filters.price==='Бесплатно'?x.price===0:filters.price==='До 3 500 ₽'?x.price>0&&x.price<=3500:x.price>3500)));
     const selector=(k,t)=>'<label>'+t+'<select data-catalog="'+k+'">'+facets[k].map(v=>'<option'+(filters[k]===v?' selected':'')+'>'+e(v)+'</option>').join('')+'</select></label>';
     const quick=['Все','Бесплатные','Самостоятельно','В группе','С экспертом'];
     const card=x=>'<button class="catalog-item program-row" data-a="'+x.action+'">'+photo(x.img,'','catalog-photo')+'<span><strong>'+e(x.title)+'</strong><small>'+e(x.format)+' · '+e(x.note)+' · '+e(x.term)+'</small><b>'+(x.price?num(x.price)+' ₽':'Бесплатно')+'</b></span></button>';

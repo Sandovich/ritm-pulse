@@ -565,7 +565,7 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
   await write('dna',{data});if([...fields].some(f=>f.dataset.preference==='gear'&&f.value))save('equip',['Без оборудования','Есть инвентарь'].includes(data.gear)?data.gear:'Все');
   document.querySelector('dialog[open]')?.close();draw();break;}
  case 'train-place':trainingPlace=v;draw();break;
- case 'author-series':programs.filter('reset');programs.filter('format','В группе');route('store');break;
+ case 'author-series':programs.filter('reset');programs.filter('format','Авторские программы');route('store');break;
  case 'catalog-quick':programs.filter('reset');if(v==='Бесплатные')programs.filter('price','Бесплатно');else if(v!=='Все')programs.filter('format',v);draw();break;
  case 'food-offers':programs.filter('reset');programs.filter('goal','Питание');route('store');break;
  case 'food-settings':homeSheet('Предпочтения питания',foodPreferences());break;
