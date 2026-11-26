@@ -31,6 +31,7 @@
 .offer-price { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 14px; margin:14px 0 18px; }
 .offer-price strong { color:var(--accent); font-size:32px; line-height:1.12; letter-spacing:-.05em; }
 body[data-screen=product] .offer-hero img { height:clamp(138px,19dvh,178px); }
+body[data-screen=product] .offer-hero img[src$="edition/start.webp"] { object-position:50% 8%; }
 .offer-price small,.offer-includes dd { color:var(--quiet); }
 .offer-includes { margin:0 0 15px; }
 .offer-includes div { padding:9px 0; border-bottom:1px solid var(--divider); }
