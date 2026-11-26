@@ -8,23 +8,29 @@ if(previewQuery.get('screen')==='today'&&!previewQuery.has('as'))sessionStorage.
 const requested=new URLSearchParams(location.search).get('as');
 if(requested==='owner'||requested==='friend')sessionStorage.setItem(sandboxStorageKey,requested);
 const previewActor=sessionStorage.getItem(sandboxStorageKey)==='friend'?'friend':'owner';
-let previewWorker;
+let previewWorker,warmTimer;
 function worker(){
   if (!previewWorker) {
-    previewWorker=new Worker('./worker.js?rev=meeting4'+(homeScenario?'&scenario=home':''));
+    previewWorker=new Worker('./worker.js?rev=meeting5'+(homeScenario?'&scenario=home':''));
     previewWorker.onmessage=receive;previewWorker.onerror=workerError;
   }
   return previewWorker;
 }
 if(!meetingRoot)worker();
 const calls=new Map();let requestId=0,initialized=false;
+function releaseIdleWorker(){
+  clearTimeout(warmTimer);
+  if(!calls.size && previewWorker){previewWorker.terminate();previewWorker=null;}
+}
+window.addEventListener('pagehide',releaseIdleWorker);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseIdleWorker();});
 window.ritmDemo={
   actor:previewActor,
   storagePrefix:meetingRoot?'ritm-ui-meeting-':homeScenario?'ritm-ui-home-':'ritm-ui-demo-',
   async api(path,body){
     if(meetingRoot && window.ritmMeetingStart){
       const value=await window.ritmMeetingStart(path,previewActor);
-      if(value){initialized=true;setTimeout(worker,200);return value;}
+      if(value){initialized=true;if(!previewWorker&&!document.hidden){clearTimeout(warmTimer);warmTimer=setTimeout(worker,160);}return value;}
     }
     return new Promise((resolve,reject)=>{
       const id=++requestId;calls.set(id,{resolve,reject});
