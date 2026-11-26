@@ -199,16 +199,16 @@ function food() {
     else{
       const menu=weekMenu(), chosen=recipe(read('dinner-id')), dinner=chosen&&allows(chosen)?chosen:menu[0];
       content=(dinner?hero({...describe(dinner),kicker:'Ужин на сегодня',note:dinner.mins+' мин · '+portions+' порц.'}):muted('Подходящего ужина в каталоге пока нет.'))+
-        b('Изменить блюдо','foodview:recipes','linebtn','repeat-2')+b('Что есть дома?','homefood','linebtn','search')+
+        '<div class="meal-actions">'+b('Изменить блюдо','foodview:recipes','linebtn','repeat-2')+b('Что есть дома?','homefood','linebtn','search')+
         (dinner?b('Готовим вдвоём','pair-meal:'+dinner.id,'linebtn','users'):'')+
-        '<details><summary>Ужины на неделю</summary>'+menu.map((m,i)=>row({...describe(m),kicker:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i]})).join('')+
+        '</div><details><summary>Ужины на неделю</summary>'+menu.map((m,i)=>row({...describe(m),kicker:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i]})).join('')+
         (menu.length?b('Добавить неделю в покупки','weekcart','linebtn full'):'')+'</details>';
     }
   }
   else content=filters+'<div class="food-tools">'+b('По продуктам дома','pantry','textbtn','search')+b(onlyFav?'Все блюда':'Избранное','favfilter','textbtn','bookmark')+'</div>'+
     (qPantry?'<div class="card">'+field('ingredients','Какие продукты есть дома?',pantry,'search','placeholder="Нут, рис, томат"')+b('Найти блюда','match','btn')+'</div>':'')+
     (feature?hero(describe(feature))+list.slice(1).map(m=>row(describe(m))).join(''):muted('Подходящих рецептов пока нет. Можно изменить продукты поиска или собрать меню со специалистом.'));
-  return head('Твоё питание','RITM FOOD')+tabs+content+b('Предпочтения питания','food-settings','textbtn full')+b('Программы питания','food-offers','linebtn full','book-open')+
+  return head('Твоё питание','RITM FOOD')+tabs+content+((foodView==='week'&&!read('food-reviewed')&&!S.dna?.limit)?'':b('Предпочтения питания','food-settings','textbtn full'))+b('Программы питания','food-offers','linebtn full','book-open')+
     '<p class="safe">Демонстрационные рецепты. Проверь состав и замены с учётом своих ограничений.</p>';
 }
 function foodPreferences(){
