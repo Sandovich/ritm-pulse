@@ -8,7 +8,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 OFFERS = {
-    'NUTRI': ('Личный нутрициолог', 5990, 1),
+    'NUTRI': ('Личный нутрициолог', 12900, 1),
     'TRAIN': ('Личный тренер', 4990, 1),
     'FOOD': ('Питание на 28 дней', 2490, 1),
     'RESET': ('28 дней изменений', 3490, 1),
