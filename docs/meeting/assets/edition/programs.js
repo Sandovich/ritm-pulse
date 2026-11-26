@@ -45,6 +45,7 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
       '<p class="program-note">Тариф готовится к запуску. Сейчас можно отметить интерес к этой цене. Оплаты и автопродления пока нет.</p>'+
       (saved?'<p class="plus-saved" role="status">'+I('check',18)+'Интерес к тарифу сохранён</p>':
         b('Мне подходит за '+num(plusMonthlyRubles)+' ₽ в месяц','interest:platform:plus','btn full'))+
+      b('Личный тренер · '+num(Catalog.TRAIN.price)+' ₽ за 28 дней','product:TRAIN','linebtn full','dumbbell')+
       b('Посмотреть сезон с нутрициологом','product:FOOD','textbtn full');
   }
   function list() {
@@ -60,7 +61,8 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
     const seasons=order.filter(k=>Object.hasOwn(Catalog,k)).map(k=>{
       const x=Catalog[k];return row('product:'+k,k==='RESET'?'RESET LEAGUE':k+' 28',info[k]+' · '+num(x.price)+' ₽',x.pic);
     }).join('');
-    return head('Программы')+plusCard()+'<div class="program-heading"><h2>Для одного</h2><span>Бесплатно</span></div>'+
+    return head('Программы')+plusCard()+
+      row('product:TRAIN',Catalog.TRAIN.title,'Один на один · 28 дней · '+num(Catalog.TRAIN.price)+' ₽',Catalog.TRAIN.pic)+'<div class="program-heading"><h2>Для одного</h2><span>Бесплатно</span></div>'+
       '<p class="program-note">Выбери занятие и проходи его в своём темпе. Приглашать друга не нужно.</p>'+solo+
       '<div class="program-heading"><h2>С экспертами</h2><span>28 дней</span></div>'+seasons+
       b('Индивидуальные консультации','go:experts','linebtn full','users')+b('Подстроить план','go:ai','textbtn','sliders-horizontal');

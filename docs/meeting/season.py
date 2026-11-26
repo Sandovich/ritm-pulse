@@ -8,6 +8,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 OFFERS = {
+    'TRAIN': ('Личный тренер', 4990, 1),
     'FOOD': ('Питание на 28 дней', 2490, 1),
     'RESET': ('28 дней изменений', 3490, 1),
     'DUO': ('Сезон для двоих', 5490, 2),
@@ -69,7 +70,7 @@ def operate(c,p,verb,data,t):
         if not c.execute('SELECT 1 FROM visitors WHERE person=?',(p,)).fetchone():
             channel=data.get('channel','direct')
             if channel not in ('direct','coach','artem','friend'):channel='direct'
-            c.execute('INSERT INTO visitors VALUES(?,?,?,?,?)',(p,secrets.choice(('benefit','pulse')),','.join(secrets.choice(list(itertools.permutations(OFFERS)))),channel,t))
+            c.execute('INSERT INTO visitors VALUES(?,?,?,?,?)',(p,secrets.choice(('benefit','pulse')),','.join(secrets.choice(list(itertools.permutations(('FOOD','RESET','DUO'))))),channel,t))
         if verb=='allocate':return {}
         c.execute('INSERT OR IGNORE INTO exposures VALUES(?,?,?)',(p,step,t));return {}
     if verb=='book':
