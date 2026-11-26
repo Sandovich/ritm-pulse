@@ -451,8 +451,10 @@ async function init(){S=await api('/api/me');if(!S.allocation)await write('alloc
  S=next;draw();if(updates.length&&(read('notifs')||{}).pulse!==false){const item=updates[0];notice(item.completed?'Друг выполнил выбранный ход.':item.selected?'Друг выбрал твой ход.':'Друг просит выбрать ответный ход.');}if(incoming()?.source&&incoming().source!==previousSource)document.querySelector('.home-pulse')?.classList.add('pulse-arrived');}}catch{}},5500);
 }
 if(demo&&!location.search&&!Object.keys(localStorage).some(k=>k.startsWith(window.ritmDemo.storagePrefix)&&k.endsWith('-entered'))){
+ const pulse = document.querySelector('.splash .loading-pulse');
  document.body.dataset.screen='intro';
  $('#content').innerHTML='<div class="screen">'+intro()+'</div>';
+ if (pulse) document.querySelector('.entry-image').append(pulse);
 }
 const startup=init().catch(err=>{$('#content').innerHTML=head('Не удалось открыть RITM')+muted(err.message)+'<button class="btn" id="retry">Попробовать ещё раз</button>';$('#retry').onclick=()=>location.reload();});
 })();
