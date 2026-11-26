@@ -19,7 +19,7 @@ def request(raw):
             added=c.execute('INSERT OR IGNORE INTO people(id,session_hash,name) VALUES(?,?,?)',(actor,actor,'Друг' if actor.endswith('friend') else '')).rowcount
             if added:core.log(c,actor,t,'visitor_created',nonce=actor)
             if route.path=='/demo/seed':
-                seed(c,t);result={'ok':True}
+                seed(c,t);result=core.snapshot(c,actor,t)
             elif route.path=='/demo/receipt':
                 from demo_ledger import record
                 booking = c.execute("SELECT ref,price FROM bookings WHERE person=? AND sku='RESET'", (actor,)).fetchone()

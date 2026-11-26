@@ -8,7 +8,7 @@ if(previewQuery.get('screen')==='today'&&!previewQuery.has('as'))sessionStorage.
 const requested=new URLSearchParams(location.search).get('as');
 if(requested==='owner'||requested==='friend')sessionStorage.setItem(sandboxStorageKey,requested);
 const previewActor=sessionStorage.getItem(sandboxStorageKey)==='friend'?'friend':'owner';
-const previewWorker=new Worker('./worker.js?rev=meeting1'+(homeScenario?'&scenario=home':''));
+const previewWorker=new Worker('./worker.js?rev=meeting2'+(homeScenario?'&scenario=home':''));
 const calls=new Map();let requestId=0,initialized=false;
 window.ritmDemo={
   actor:previewActor,

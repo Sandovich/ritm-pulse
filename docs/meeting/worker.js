@@ -2,16 +2,20 @@
 const runtimeBase = new URL('./runtime/', self.location.href).href;
 importScripts(runtimeBase + 'pyodide.js');
 async function init(){
-  const runtime=await loadPyodide({indexURL:runtimeBase});
-  await runtime.loadPackage('sqlite3');
-  await Promise.all(['core.py','choices.py','season.py','notifications.py','journey.py','fixture.py','demo_ledger.py','bridge.py'].map(async name=>{
+  const modules=['core.py','choices.py','season.py','notifications.py','journey.py','fixture.py','demo_ledger.py','bridge.py'];
+  const sources=Promise.all(modules.map(async name=>{
     const moduleUrl=new URL('./'+name,self.location.href);
     const revision=new URL(self.location.href).searchParams.get('rev');
     if(revision)moduleUrl.searchParams.set('rev',revision);
     const response=await fetch(moduleUrl);
     if(!response.ok)throw Error('Не удалось загрузить '+name);
-    runtime.FS.writeFile('/home/pyodide/'+name,await response.text());
+    return [name,await response.text()];
   }));
+  const interpreter=loadPyodide({indexURL:runtimeBase}).then(async runtime=>{
+    await runtime.loadPackage('sqlite3');return runtime;
+  });
+  const [runtime,files]=await Promise.all([interpreter,sources]);
+  for(const [name,source] of files)runtime.FS.writeFile('/home/pyodide/'+name,source);
   runtime.runPython('from bridge import answer');
   const db=await new Promise((resolve,reject)=>{
     const dbName=self.location.pathname.split('/').includes('meeting')?'ritm-founders-meeting':
