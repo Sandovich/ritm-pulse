@@ -11,7 +11,7 @@ const previewActor=sessionStorage.getItem(sandboxStorageKey)==='friend'?'friend'
 let previewWorker,warmTimer;
 function worker(){
   if (!previewWorker) {
-    previewWorker=new Worker('./worker.js?rev=nutri2'+(homeScenario?'&scenario=home':''));
+    previewWorker=new Worker('./worker.js?rev=plus990'+(homeScenario?'&scenario=home':''));
     previewWorker.onmessage=receive;previewWorker.onerror=workerError;
   }
   return previewWorker;

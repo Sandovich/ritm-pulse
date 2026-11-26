@@ -64,7 +64,7 @@ def operate(c,p,v,b,t):
     elif v=='interest':
         role=b.get('role');kind=b.get('kind')
         expert_offer=role in ('train','food','ai') and kind in ('consult','program','event','plus')
-        if not expert_offer and (role,kind)!=('platform','plus'):
+        if not expert_offer and (role,kind) not in (('platform','plus'),('platform','plus990')):
             raise ValueError('Предложение недоступно.')
         c.execute('INSERT OR IGNORE INTO expert_interest VALUES(?,?,?,?)',(p,role,kind,t))
     return {}

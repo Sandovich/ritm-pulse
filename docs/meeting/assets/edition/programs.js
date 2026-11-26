@@ -14,7 +14,7 @@ const SoloPlans = {
     steps:['Подготовь инвентарь для освоенного упражнения.', 'Открой силовой блок и выполни занятие по своему плану.', 'Запиши подходы и повторы. Программа завершится после трёх тренировочных дней.']}
 };
 
-const plusMonthlyRubles = 499;
+const plusMonthlyRubles = 990;
 
 function createProgramViews({state,photo,I,b,e,label,head,num}) {
   const current = () => Object.keys(SoloPlans).find(id=>state().solo?.[id]?.selected);
@@ -25,16 +25,16 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
       '<span><strong>'+e(title)+'</strong><small>'+e(note)+'</small></span>'+I('chevron-right',17)+'</button>';
   }
   function plusCard() {
-    const saved=state().interest?.includes('platform:plus');
-    return '<button type="button" class="plus-card" data-a="go:plus"><span><small>Подписка для одного</small><strong>RITM PLUS</strong>'+
-      '<span>'+ (saved?'Интерес сохранён':'Питание, тренировки и личный прогресс') +'</span></span>'+
+    const saved=state().interest?.includes('platform:plus990');
+    return '<button type="button" class="plus-card" data-a="go:plus"><span><small>RITM PLUS</small><strong>Самостоятельно</strong>'+
+      '<span>'+ (saved?'Интерес сохранён':'Программы, рецепты и дневник') +'</span></span>'+
       '<b>'+num(plusMonthlyRubles)+' ₽<small>в месяц</small></b>'+I('chevron-right',16)+'</button>';
   }
   function plus() {
-    const saved=state().interest?.includes('platform:plus');
+    const saved=state().interest?.includes('platform:plus990');
     const features=[
-      ['utensils','Меню для одного','Подбор блюд на неделю с учётом бюджета и продуктов дома.'],
-      ['dumbbell','Тренировки по твоему графику','Варианты занятий под свободное время и доступный инвентарь.'],
+      ['utensils','Рецепты и список покупок','Подбор блюд на неделю с учётом бюджета и продуктов дома.'],
+      ['dumbbell','Программы для дома и зала','Варианты занятий под свободное время и доступный инвентарь.'],
       ['activity','Личный прогресс','Сводка по неделям покажет, как часто удавалось придерживаться плана.']
     ];
     return head('RITM PLUS','Подписка для одного')+
@@ -44,7 +44,7 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
         '<div class="plus-feature">'+I(icon,20)+'<div><strong>'+e(title)+'</strong><small>'+e(desc)+'</small></div></div>').join('')+
       '<p class="program-note">Тариф готовится к запуску. Сейчас можно отметить интерес к этой цене. Оплаты и автопродления пока нет.</p>'+
       (saved?'<p class="plus-saved" role="status">'+I('check',18)+'Интерес к тарифу сохранён</p>':
-        b('Мне подходит за '+num(plusMonthlyRubles)+' ₽ в месяц','interest:platform:plus','btn full'))+
+        b('Мне подходит за '+num(plusMonthlyRubles)+' ₽ в месяц','interest:platform:plus990','btn full'))+
       b('Личный тренер · '+num(Catalog.TRAIN.price)+' ₽ за 28 дней','product:TRAIN','linebtn full','dumbbell')+
       b('Личный нутрициолог · '+num(Catalog.NUTRI.price)+' ₽ за 28 дней','product:NUTRI','linebtn full','utensils')+
       b('Посмотреть сезон FOOD 28','product:FOOD','textbtn full');
@@ -58,14 +58,17 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
       return row('solo:'+id,x.title,note,x.photo);
     }).join('');
     const order=(state().allocation?.ordering||'RESET,FOOD,DUO').split(',');
-    const info={FOOD:'Для одного · нутрициолог',RESET:'В группе · тренер и нутрициолог',DUO:'Для двоих · общие задания'};
-    const seasons=order.filter(k=>Object.hasOwn(Catalog,k)).map(k=>{
-      const x=Catalog[k];return row('product:'+k,k==='RESET'?'RESET LEAGUE':k+' 28',info[k]+' · '+num(x.price)+' ₽',x.pic);
+    const info={FOOD:'Меню и групповой разбор',RESET:'Группа до 10 человек, тренер и нутрициолог'};
+    const groups=order.filter(k=>Object.hasOwn(info,k)).map(k=>{
+      const x=Catalog[k];return row('product:'+k,k==='RESET'?'RESET LEAGUE':'FOOD 28',info[k]+' · '+num(x.price)+' ₽',x.pic);
     }).join('');
     return head('Программы')+plusCard()+
-      ['TRAIN','NUTRI'].map(k=>row('product:'+k,Catalog[k].title,'Один на один · 28 дней · '+num(Catalog[k].price)+' ₽',Catalog[k].pic)).join('')+'<div class="program-heading"><h2>Для одного</h2><span>Бесплатно</span></div>'+
-      '<p class="program-note">Выбери занятие и проходи его в своём темпе. Приглашать друга не нужно.</p>'+solo+
-      '<div class="program-heading"><h2>С экспертами</h2><span>28 дней</span></div>'+seasons+
+      row('product:TRAIN','С тренером','Личный план и 4 разбора · '+num(Catalog.TRAIN.price)+' ₽ за 28 дней',Catalog.TRAIN.pic)+
+      row('product:NUTRI','С нутрициологом','Дневник питания и 4 разбора · '+num(Catalog.NUTRI.price)+' ₽ за 28 дней',Catalog.NUTRI.pic)+
+      '<div class="program-heading"><h2>Хочу в группу</h2><span>28 дней</span></div>'+groups+
+      '<div class="program-heading"><h2>Попробовать бесплатно</h2></div>'+solo+
+      '<div class="program-heading"><h2>Для двоих</h2></div>'+
+      row('product:DUO','DUO 28','Совместный сезон · '+num(Catalog.DUO.price)+' ₽ за двоих',Catalog.DUO.pic)+
       b('Индивидуальные консультации','go:experts','linebtn full','users')+b('Подстроить план','go:ai','textbtn','sliders-horizontal');
   }
   function detail(id) {
