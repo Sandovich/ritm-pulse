@@ -63,7 +63,9 @@ def operate(c,p,v,b,t):
         else:c.execute('DELETE FROM cheers WHERE circle=? AND action=? AND person=?',(g,a,p))
     elif v=='interest':
         role=b.get('role');kind=b.get('kind')
-        if role not in ('train','food','ai') or kind not in ('consult','program','event','plus'):raise ValueError('Предложение недоступно.')
+        expert_offer=role in ('train','food','ai') and kind in ('consult','program','event','plus')
+        if not expert_offer and (role,kind)!=('platform','plus'):
+            raise ValueError('Предложение недоступно.')
         c.execute('INSERT OR IGNORE INTO expert_interest VALUES(?,?,?,?)',(p,role,kind,t))
     return {}
 

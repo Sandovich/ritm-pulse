@@ -239,3 +239,17 @@ button .i {display:block;flex-shrink:0}
 .screen .program-heading h2,.screen .pulse-invitation h2 {margin:0}
 body[data-screen="food"] .segmented .chip {white-space:nowrap;padding-inline:5px}
 .entry-options {flex-wrap:wrap}
+
+.plus-card {display:flex;align-items:center;gap:10px;width:100%;padding:13px 14px;margin:8px 0 0;text-align:left;border:1px solid var(--pulse-line);border-radius:14px;background:var(--pulse-surface)}
+.plus-card>span {flex:1;min-width:0;display:grid;gap:3px}
+.plus-card>span>small {color:var(--accent);font-size:12px}
+.plus-card>span>strong {font-size:20px;line-height:1.2}
+.plus-card>span>span,.plus-card>b>small,.plus-feature small {color:var(--quiet);font-size:13px;font-weight:500}
+.plus-card>b {font-size:18px;white-space:nowrap}
+.plus-card>b>small,.plus-feature small {display:block}
+.plus-card>.i,.plus-feature>.i,.plus-saved {color:var(--accent)}
+.plus-price {margin:8px 0;color:var(--quiet)}
+.plus-price strong {color:var(--accent);font-size:30px}
+.plus-feature {display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--divider)}
+.plus-feature small {margin-top:3px;line-height:1.45}
+.plus-saved {display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px}

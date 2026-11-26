@@ -47,7 +47,7 @@ const incoming=()=>S.pulse.filter(x=>x.person!==S.profile.id&&x.source&&!x.answe
 const allows=m=>{const p=S.dna||{},limit=p.limit||'';if(limit==='Указать свои'||limit.startsWith('Свои:'))return false;if(p.food==='Растительную'&&!m.plant||p.food==='Без мяса'&&!m.veg)return false;return !m.all.includes(limit)};
 const dishes=()=>Meals.filter(allows),recipe=id=>Meals.find(m=>m.id===id),work=id=>Workouts.find(x=>x.id===id)||Workouts[0];
 const logo='<span class="wordmark">ritm.</span>';
-function activeTab(){if(['store','solo','product'].includes(view)){
+function activeTab(){if(['store','solo','product','plus'].includes(view)){
   const origin=[...stack].reverse().find(([name])=>navs.some(([id])=>id===name));
   return origin?.[0]||'today';
 }if(['meal','basket','food'].includes(view))return 'food';if(['game','arena'].includes(view))return 'arena';if(['pulse','invite','share','choice','choice-compose'].includes(view)||(view==='action'&&reply))return 'pulse';if(['profile','dna-map','recap','checkin','settings','privacy','store','product','expert','experts','seasonplan','season-story','next-season','league-desk','league-review','league-support'].includes(view))return 'profile';return 'today';}
@@ -274,7 +274,7 @@ function renderMisc(){switch(view){
  case 'name':return head('Как тебя называть?','Профиль')+field('startname','Твоё имя',S.profile.name,'text','maxlength="30" autocomplete="given-name"')+b('Продолжить','named','btn full')+b('Назад','back','textbtn full');
  default:return head('Твой день')+b('На главную','go:today');
  }}
-const screens={choice:()=>choice.detail(detail),'choice-compose':choice.composer,today,food,pulse,arena,profile,intro,dna,'dna-map':dnaMap,action:actionScreen,setup,game,meal,train,work:workout,experts,expert,store:programs.list,solo:()=>programs.detail(detail),product,recap};
+const screens={choice:()=>choice.detail(detail),'choice-compose':choice.composer,today,food,pulse,arena,profile,intro,dna,'dna-map':dnaMap,action:actionScreen,setup,game,meal,train,work:workout,experts,expert,store:programs.list,plus:programs.plus,solo:()=>programs.detail(detail),product,recap};
 const lifecycle=demo?createRitmLifecycle({read,save,route,draw,b,e,I,label,muted,head,num,price:Catalog.RESET.price,participantName:()=>S.profile.name||'Участник',hasSeat:seatActive,renewal:()=>S.demo_renewal}):null;
 if(lifecycle)Object.assign(screens,{'season-story':lifecycle.journey,'next-season':lifecycle.offer,'league-desk':lifecycle.desk,'league-review':()=>lifecycle.review(detail),'league-support':lifecycle.support});
 let lastPulseSource='',offerObserver;
@@ -417,7 +417,11 @@ async function init(){S=await api('/api/me');if(!S.allocation)await write('alloc
  if(await choice.initialize(query)){/* The invitation supplies the first screen for guests. */}
  else if(pendingGuest){try{guestInfo=await api('/api/invite?token='+encodeURIComponent(pendingGuest));view='invite';}catch(err){clearInvite();notice(err.message);}}
  else if(demo&&['season-story','league-desk'].includes(query.get('screen'))){await seed();save('entered',true);view=query.get('screen');stack=[['profile','']];}
- else if(query.get('screen')==='programs'){view='store';stack=[[read('entered')||S.profile.goal?'today':'intro','']];}
+ else if(['programs','plus'].includes(query.get('screen'))){
+   view=query.get('screen')==='plus'?'plus':'store';
+   stack=[[read('entered')||S.profile.goal?'today':'intro','']];
+   if(view==='plus')stack.push(['store','']);
+ }
  else if(demo&&query.get('screen')==='reset-league'){await seed();save('entered',true);view='product';detail='RESET';stack=[['today',''],['arena','']];}
  else if(demo&&new URLSearchParams(location.search).get('screen')==='today'){await seed();save('entered',true);view='today';if(query.get('feature')==='choice')choice.start();}
  else if(readQuestionnaire()&&!readQuestionnaire().paused){
