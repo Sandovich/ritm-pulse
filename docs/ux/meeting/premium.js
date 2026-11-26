@@ -63,7 +63,7 @@ const choice = window.RitmChoice({state:()=>S, write, route, draw, notice, e, b,
 const rewardLine = reward => reward ? '<span class="duel-reward">'+I('hand-heart',19)+'<span><small>Ваша награда</small><b>'+e(reward)+'</b></span></span>' : '';
 const eventTime = stamp => S.server_time-stamp<86400?RitmHome.relative(stamp,S.server_time):new Date(stamp*1000).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
 function homeHelpers() {
-  return {I,e,demo,weekly,incoming,time,personal:programs.active(),dinner:(read('food-reviewed')||S.dna?.limit)&&dishes().find(m=>m.type==='Ужин')};
+  return {I,e,demo,weekly,incoming,time,personal:programs.active(),dinner:(read('food-reviewed')||S.dna?.limit)&&currentDinner()};
 }
 const heartbeatPattern = [35, 85, 55];
 let nextHeartbeat = 0;
@@ -187,6 +187,12 @@ return head(title,m==='duel'?'7 дней · регулярность':'PULSE')+r
 (g.token&&g.invite_open?b('Пригласить друга','share:'+g.id,'btn full','link'):'')+(m==='duel'&&g.active&&!my.days.includes(S.day)||m==='relay'&&g.active&&g.host!==S.profile.id&&!my.days.length?b('Выполнить свой ход','play:'+g.id,'btn full','check'):'')+(m==='duel'&&!g.active&&g.starts?b('Предложить реванш','setup:duel','linebtn full','repeat-2'):'')+(m==='circle'?b('Покинуть круг','leave:'+g.id,'linebtn','user'):'');}
 function mealsFiltered(){let list=dishes();if(onlyFav){let fav=read('favs')||[];list=list.filter(m=>fav.includes(m.id));}if(qPantry){const terms=pantry.toLowerCase().split(/[,\s]+/).filter(Boolean);if(terms.length)return list.map(m=>[m,terms.filter(t=>m.ing.some(([n])=>n.toLowerCase().includes(t))).length]).filter(x=>x[1]>0).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);}return list.filter(m=>m.type===mt);}
 function weekMenu(){const permitted=dishes().sort((a,b)=>S.dna?.budget==='Важна доступная цена'?a.rub-b.rub:S.dna?.budget==='Важнее сэкономить время'?a.mins-b.mins:0),list=permitted.filter(m=>m.type==='Ужин');return Array.from({length:7},(_,i)=>list.length?list[i%list.length]:permitted[i%Math.max(permitted.length,1)]).filter(Boolean);}
+function currentDinner(menu=weekMenu()){
+ const selected=recipe(read('dinner-id'));
+ if(selected&&allows(selected))return selected;
+ const weekday=(new Date(S.day+'T12:00:00Z').getUTCDay()+6)%7;
+ return menu[weekday]||menu[0];
+}
 function food() {
   const list=mealsFiltered(),feature=list[0];
   const tabs='<div class="segmented">'+[['week','Мой рацион'],['recipes','Рецепты'],['cart','Покупки']].map(([k,n])=>b(n,'foodview:'+k,'chip '+(foodView===k?'on':''))).join('')+'</div>';
@@ -197,7 +203,7 @@ function food() {
   else if(foodView==='week'){
     if(!read('food-reviewed')&&!S.dna?.limit)content='<h2>Есть продукты, которые ты исключаешь?</h2>'+foodPreferences();
     else{
-      const menu=weekMenu(), chosen=recipe(read('dinner-id')), dinner=chosen&&allows(chosen)?chosen:menu[0];
+      const menu=weekMenu(), dinner=currentDinner(menu);
       content=(dinner?hero({...describe(dinner),kicker:'Ужин на сегодня',note:dinner.mins+' мин · '+portions+' порц.'}):muted('Подходящего ужина в каталоге пока нет.'))+
         '<div class="meal-actions">'+b('Изменить блюдо','foodview:recipes','linebtn','repeat-2')+b('Что есть дома?','homefood','linebtn','search')+
         (dinner?b('Готовим вдвоём','pair-meal:'+dinner.id,'linebtn','users'):'')+
