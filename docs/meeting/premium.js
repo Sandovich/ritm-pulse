@@ -103,14 +103,17 @@ function showHomePlan() {
 }
 const times=()=>'<div class="chips">'+[5,10,20,30,60].map(v=>b(v+' мин','time:'+v,'chip '+(v===time?'on':''))).join('')+'</div>';
 function intro() {
-  return '<section class="entry"><div class="entry-image">'+photo('edition/start','Бегунья перед стартом')+
-    '</div><div class="entry-copy"><h1><span>Твой первый шаг.</span></h1><p>Начни самостоятельно, с экспертом или вместе с другом.</p>'+
-    b('Выбрать программу','go:store','btn full','arrow-right')+'<div class="entry-options">'+
-    b('Подобрать за два вопроса','start','textbtn')+b('Войти по приглашению','invitation','textbtn')+b('Посмотреть демо',demo?'demo-start':'open-demo','textbtn')+(!demo?b('Восстановить профиль','go:recover','textbtn'):'')+'</div></div></section>';
+  const options=quickQuestions[0][2].map(goal=>'<button type="button" class="entry-answer" data-a="start-goal:'+e(goal)+'"><span>'+e(goalLabels[goal])+'</span>'+I('chevron-right',18)+'</button>').join('');
+  return '<section class="entry-question">'+label('Твой план · 1 из 2')+'<div class="meter"><i style="width:50%"></i></div>'+
+    '<h1>С чего хочешь начать?</h1><p>Выбери одно дело. Затем укажи, сколько у тебя времени.</p>'+
+    '<div class="answer-list">'+options+'</div><div class="entry-links">'+
+    b('У меня есть приглашение','invitation','textbtn')+
+    b('Все программы','go:store','textbtn')+b('Посмотреть демо',demo?'demo-start':'open-demo','textbtn')+
+    (!demo?b('Восстановить профиль','go:recover','textbtn'):'')+'</div></section>';
 }
 function dna(){
   const steps=questions(), [k,storedTitle,opts,optional]=steps[step];
-  const title=formMode==='quick'?(k==='goal'?'С чего хочешь начать?':'Сколько времени есть в день?'):storedTitle;
+  const title=formMode==='quick'?(k==='goal'?'С чего хочешь начать?':'Сколько минут у тебя есть?'):storedTitle;
   const choices=opts.map(o=>{
     const txt=k==='goal'?(goalLabels[o]||o):k==='minutes'?o+' минут':o;
     const checked=draft[k]===o;
@@ -120,6 +123,7 @@ function dna(){
   const next=step<steps.length-1?'Дальше':formMode==='quick'?'Посмотреть программу':'Сохранить ответы';
   return '<div class="onboarding-screen">'+label((formMode==='quick'?'Подбор программы':'Мои предпочтения')+' · '+(step+1)+' из '+steps.length)+
     '<div class="meter"><i style="width:'+pct(step+1,steps.length)+'%"></i></div><h1>'+e(title)+'</h1>'+
+    (formMode==='quick'&&step===1?muted((goalLabels[draft.goal]||draft.goal)+' · выбери удобную длительность.'):'')+
     (optional?muted('Учитываем ответ при подборе блюд. Этот вопрос можно пропустить.'):'')+
     '<div class="answer-list">'+choices+'</div>'+(custom?field('customLimit','Какие продукты исключить?',draft.custom||'','text','maxlength="120"'):'')+
     '<button class="btn full" data-a="dnanext" '+(!draft[k]?'disabled':'')+'>'+next+I('arrow-right',18)+'</button>'+
@@ -337,6 +341,9 @@ async function handle(id){const [cmd,...args]=id.split(':'),v=args.join(':');if(
    const action=member.source?'Последнее дело · '+labels[member.kind]+' · '+RitmHome.relative(member.at,S.server_time):'Пока нет новых дел, открытых кругу.';
    homeSheet(member.name||'Участник',muted(action)+'<div class="sheet-links">'+(member.source&&!member.answered?b('Ответить своим делом','memberreply:'+member.person,'','zap'):'')+b('Открыть круг','game:'+member.game,'','users')+'</div>');break;
  }
+ case 'start-goal':
+   if(!quickQuestions[0][2].includes(v))break;
+   expose('start');draft={...S.dna,goal:v};formMode='quick';step=1;route('dna');break;
  case 'back':back();break;case 'start':expose('start');draft={...S.dna};formMode='quick';step=0;route('dna');break;
  case 'named':{const name=$('#startname').value.trim();if(!name)throw Error('Введи имя для друзей.');await write('profile',{name,goal:S.profile.goal||'Регулярное движение',barrier:S.profile.barrier||'Мало времени',program:S.profile.program||'Своя программа'});draft={...S.dna};formMode='quick';step=0;route('dna');break;}
  case 'editdna':{
@@ -457,7 +464,7 @@ if(demo&&!location.search&&!Object.keys(localStorage).some(k=>k.startsWith(windo
  const pulse = document.querySelector('.splash .loading-pulse');
  document.body.dataset.screen='intro';
  $('#content').innerHTML='<div class="screen">'+intro()+'</div>';
- if (pulse) document.querySelector('.entry-image').append(pulse);
+ if (pulse) document.querySelector('.entry-question').prepend(pulse);
 }
 const startup=init().catch(err=>{$('#content').innerHTML=head('Не удалось открыть RITM')+muted(err.message)+'<button class="btn" id="retry">Попробовать ещё раз</button>';$('#retry').onclick=()=>location.reload();});
 })();
