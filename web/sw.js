@@ -32,7 +32,7 @@ self.addEventListener('notificationclick', event => {
  })());
 });
 /* The offline cache contains only the app shell. Private API responses stay out. */
-const shellCache='ritm-athletic-shell-3d';
+const shellCache='ritm-athletic-shell-refined-1';
 self.addEventListener('install',event=>event.waitUntil((async()=>{
   const root=new URL('./',self.registration.scope);
   const response=await fetch(root,{cache:'reload'});
@@ -40,7 +40,7 @@ self.addEventListener('install',event=>event.waitUntil((async()=>{
   const html=await response.clone().text();
   const files=Array.from(html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="([^"]+)"/g),m=>new URL(m[1],root)).filter(u=>u.origin===root.origin);
   const cache=await caches.open(shellCache);
-  const artwork=['assets/edition/strength.webp','assets/edition/green.webp','assets/manrope-cyrillic-wght-normal.woff2','assets/manrope-latin-wght-normal.woff2'];
+  const artwork=['assets/refined-ui/manrope-cyrillic-450.woff2','assets/refined-ui/manrope-cyrillic-700.woff2','assets/refined-ui/manrope-latin-450.woff2','assets/refined-ui/manrope-latin-700.woff2','assets/edition/strength.webp','assets/edition/green.webp','assets/manrope-cyrillic-wght-normal.woff2','assets/manrope-latin-wght-normal.woff2'];
   await cache.addAll([...new Set([...files.map(u=>u.href),...artwork.map(path=>new URL(path,root).href)])]);
   await cache.put(root,response);
   await self.skipWaiting();

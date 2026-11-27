@@ -114,7 +114,10 @@ function today(){
  '<button class="ref-meter" data-a="go:journalFood"><span>Питание<i>↗</i></span><b class="ref-kcal">'+Math.round(nutrients[0]).toLocaleString('ru-RU')+'</b><small>ккал в дневнике</small><span class="ref-bars">'+bars+'</span><small>'+(entries.length?'Состав по энергии':'Записать еду')+'</small></button></div>';
  const action=food?'meal:'+next?.id:'work:'+next?.id;
  const main=selected?'<button class="ref-plan" data-a="'+e(action)+'">'+photo(next.pic)+'<span><small>'+(food?'ТВОЙ УЖИН':'ТВОЯ ТРЕНИРОВКА')+'</small><strong>'+e(food?next.name:next.title)+'</strong><em>'+e(food?'Приготовление':next.gear)+' · '+(food?next.mins:Math.min(time,next.mins))+' мин</em><i class="ref-play">'+I(food?'arrow-up-right':'circle-play')+'</i></span></button>':b('Выбрать блюдо','go:food','btn full');
- return head('Время для себя.',date)+metrics+'<div class="between"><h2>Продолжай свой план</h2>'+b(time+' мин','quicktime','chip','clock')+'</div>'+main+
+ const dinner=helpers.dinner;
+ const alternative=!food&&dinner&&dinner.mins<=time
+   ? '<div class="day-alternative">'+label(next&&next.mins+dinner.mins<=time?'Затем · питание':'Другой вариант на сегодня')+row({art:dinner.pic,kicker:'Ужин',title:dinner.name,note:dinner.mins+' мин · приготовление',action:'meal:'+dinner.id})+'</div>' : '';
+ return head('Время для себя.',date)+metrics+'<div class="between"><h2>Твой план</h2>'+b(time+' мин','quicktime','chip','clock')+'</div>'+main+alternative+
  (incoming()?RitmHome.pulse(S,helpers):b('Пригласить друга на неделю','setup:duel','club-social full','users'))+
  helpers.personal+b('Мой прогресс','go:journalStats','linebtn full','activity')+b(food?'Выбрать тренировку':'Выбрать ужин',food?'go:train':'go:food','textbtn full')+
  (S.booking?.paid_kopeks>S.booking?.refunded_kopeks?'':expertRow(food?'food':'train'));
@@ -206,7 +209,7 @@ function pulse() {
     b('Совместное время','together','linebtn','clock')+'</div>';
   return '<header class="jr-cover jr-cover-pulse"><div>'+head('Твой круг','PULSE')+'</div></header>'+(event?RitmHome.pulse(S,homeHelpers()):'')+choice.modeMenu()+spotlight('track','Арена · 7 дней','Выйдем на старт вместе?','Выберите каждый своё действие и сравните регулярность.','go:arena','Открыть Арену')+inviteTools+b('Настроить поддержку','context:social','textbtn')+
     (groups||'<h2>Твой круг</h2>')+b(circles.length?'Создать ещё один круг':'Создать круг друзей','create:circle','textbtn','users')+
-    (entries||circles.length?'<h2>Лента круга</h2>'+(entries||muted('Когда участник поделится делом, оно появится здесь.')):'')+
+    (entries||circles.length?'<details><summary>История круга</summary>'+(entries||muted('Когда участник поделится делом, оно появится здесь.'))+'</details>':'')+
     '<div class="pulse-tools">'+b('Записать своё дело','action:move','linebtn','plus')+b('Приватность','go:privacy','linebtn','lock')+'</div>';
 
 }
@@ -241,7 +244,7 @@ function food() {
   let content;
   if(foodView==='cart') content=basket();
   else if(foodView==='week'){
-    if(!read('food-reviewed')&&!S.dna?.limit)content='<h2>Есть продукты, которые ты исключаешь?</h2>'+foodPreferences();
+    if(!read('food-reviewed')&&!S.dna?.limit)content=spotlight('edition/salad','Рацион','Ужин на сегодня','Укажи предпочтения и исключения для подбора блюд.','food-settings','Настроить рацион');
     else{
       const menu=weekMenu(), dinner=currentDinner(menu);
       content=(dinner?hero({...describe(dinner),kicker:'Ужин на сегодня',note:dinner.mins+' мин · '+portions+' порц.'}):muted('Подходящего ужина в каталоге пока нет.'))+
@@ -507,7 +510,7 @@ function draw(){if(!S)return;
  document.body.classList.toggle('choice-ballot',ballot);
  $('#head').innerHTML=first?'<div class="home-brand"><span class="home-wordmark">ritm.</span>'+(demo?'<span class="home-demo">Premium Athletic</span>':'')+'</div>'+(ballot?label('PULSE / CHOICE'):''):RitmHome.header(S,homeHelpers());
  $('#content').innerHTML='<div class="screen">'+(!root.includes(view)&&!first?b('Назад','back','back','arrow-left'):'')+(screens[view]?screens[view]():renderMisc())+'</div>';
- $('#nav').innerHTML=first?'':navs.map(([id,n,icon])=>'<button data-a="go:'+id+'" class="'+(activeTab()===id?'active ':'')+(id==='pulse'?'pulse-nav':'')+'" '+(activeTab()===id?'aria-current="page"':'')+'>'+I(icon)+'<span>'+n+'</span></button>').join('');
+ $('#nav').innerHTML=first?'':RitmUI.nav(navs,activeTab(),I);
  if(view==='store'&&'IntersectionObserver' in window){
    const firstOffer=document.querySelector('.catalog-item[data-a^="product:"]');
    if(firstOffer){offerObserver?.disconnect();offerObserver=new IntersectionObserver(([entry])=>{

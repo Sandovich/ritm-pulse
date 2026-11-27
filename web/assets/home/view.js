@@ -37,7 +37,7 @@ window.RitmHome = (() => {
   }
   function header(s, {I,e,demo}) {
     return '<div class="home-brand"><button data-a="go:today" aria-label="Сегодня, RITM" class="home-wordmark">ritm.</button>'+
-      (demo?'<button class="home-demo" data-a="demomenu" aria-label="Настройки демонстрации">Premium Athletic</button>':'')+
+      (demo?'<button class="home-demo" data-a="demomenu" aria-label="Настройки демонстрации">Refined Athletic</button>':'')+
       '</div><div class="home-tools"><button class="home-icon" data-a="go:notifications" aria-label="Уведомления">'+I('bell',21)+'</button>'+
       '<button class="home-avatar-button" data-a="go:profile" aria-label="Мой профиль"><span class="user-photo">'+portrait({person:s.profile.id,name:s.profile.name},demo,e)+'</span></button></div>';
   }
@@ -78,7 +78,7 @@ window.RitmHome = (() => {
     } else if(s.feed?.some(x=>x.person===s.profile.id)){
       title="Твоё дело в ленте круга.";status="Движение продолжается.";stamp="Круг";cmd="go:pulse";cta="В круг";
     }
-    return '<section class="home-pulse"><div class="pulse-stamp">'+RitmVisual.pulseTrace+I('zap',16)+'<span>PULSE / '+e(stamp)+'</span></div><h2>'+e(title)+'</h2><div class="pulse-foot"><span>'+status+'</span><button data-a="'+cmd+'">'+cta+' '+I('arrow-up-right',14)+'</button></div></section>';
+    return '<section class="home-pulse">'+(p?'<span class="pulse-avatar">'+portrait({person:p.person,name:p.name},demo,e)+'</span>':'')+'<div class="pulse-stamp">'+RitmVisual.pulseTrace+I('zap',16)+'<span>PULSE / '+e(stamp)+'</span></div><h2>'+e(title)+'</h2><div class="pulse-foot"><span>'+status+'</span><button data-a="'+cmd+'">'+cta+' '+I('arrow-up-right',14)+'</button></div></section>';
   }
   function row(code,title,duration,img,link,{I,e}) {
     return '<button class="home-plan-row" data-a="'+link+'">'+image(img,"row-photo")+'<span class="row-text"><small>'+code+'</small><b>'+title+'</b><span>'+e(duration)+'</span></span>'+I("arrow-up-right",15)+'</button>';

@@ -65,7 +65,7 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
     return (paid?row(order.sku==='RESET'?'go:league-support':'product:'+order.sku,order.sku==='RESET'?'RESET LEAGUE':Catalog[order.sku].title,'Моя программа · открыть',Catalog[order.sku].pic):'')+home();
   }
   function resetCover(){
-    return '<button class="ath-cover catalog-item" data-a="product:RESET">'+photo('edition/strength','')+'<span class="ath-copy">'+label('Авторский сезон / в группе')+'<strong>RESET LEAGUE</strong><span>Выстрой режим тренировок и питания с тренером и нутрициологом.</span><span class="ath-price">28 дней<b>'+num(Catalog.RESET.price)+' ₽</b></span></span></button>';
+    return '<button class="ath-cover catalog-item" data-a="product:RESET">'+photo('edition/strength','')+'<span class="ath-copy">'+label('Авторский сезон / в группе')+'<strong>RESET LEAGUE</strong><span>Выстрой режим тренировок и питания с тренером и нутрициологом.</span><span class="ath-price">28 дней · до 10 участников<b>'+num(Catalog.RESET.price)+' ₽</b></span></span></button>';
   }
   function list(){
     const offers=[['RESET','RESET LEAGUE','В группе',['Движение','Питание']],['FOOD','FOOD 28','В группе',['Питание']],['TRAIN','Личный тренер','С экспертом',['Движение']],['NUTRI','Личный нутрициолог','С экспертом',['Питание']],['DUO','DUO 28','Для двоих',['Движение','Питание']]];
@@ -78,7 +78,7 @@ function createProgramViews({state,photo,I,b,e,label,head,num}) {
     entries.push({title:'RITM PLUS',format:'Самостоятельно',goals:['Движение','Питание'],price:plusMonthlyRubles,who:'RITM',level:'Для старта',term:'в месяц · сбор интереса',note:'Самостоятельные программы, рецепты и дневник',img:'edition/mobility',action:'go:plus'});
     const matches=entries.filter(x=>(filters.format==='Все'||filters.format===x.format||(filters.format==='Авторские программы'&&['product:RESET','product:FOOD','product:DUO'].includes(x.action)))&&(filters.goal==='Все'||x.goals.includes(filters.goal))&&(filters.level==='Все'||x.level===filters.level)&&(filters.price==='Все'||(filters.price==='Бесплатно'?x.price===0:filters.price==='До 3 500 ₽'?x.price>0&&x.price<=3500:x.price>3500)));
     const selector=(k,t)=>'<label>'+t+'<select data-catalog="'+k+'">'+facets[k].map(v=>'<option'+(filters[k]===v?' selected':'')+'>'+e(v)+'</option>').join('')+'</select></label>';
-    const quick=['Все','Бесплатные','Самостоятельно','В группе','С экспертом'];
+    const quick=['Все','Бесплатные','Самостоятельно','В группе','С экспертом','Для двоих'];
     const card=x=>'<button class="catalog-item program-row" data-a="'+x.action+'">'+photo(x.img,'','catalog-photo')+'<span><strong>'+e(x.title)+'</strong><small>'+e(x.format)+' · '+e(x.note)+' · '+e(x.term)+'</small><b>'+(x.price?num(x.price)+' ₽':'Бесплатно')+'</b></span></button>';
     const group=(title,items,cls='')=>items.length?'<section class="catalog-section"><h2>'+title+'</h2><div class="'+cls+'">'+items.map(card).join('')+'</div></section>':'';
     const flagship=matches.find(x=>x.action==='product:RESET');

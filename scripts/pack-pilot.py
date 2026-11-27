@@ -16,6 +16,7 @@ files.extend((root/"analysis").glob("*.py"))
 files.extend((root/"analysis").glob("*.sql"))
 for name in ("check-choice.py","check-rules.py","check-season.py","check-push.py","next_backup.py","next_diaries.py","next_exchange.py","choice_pilot.py","home_review.py","origin_outage.py","run-pilot.py"):
     files.append(root/"tests"/name)
+files.extend(root/"scripts"/name for name in ("visual-controls.py","refined-pages.py","pack-pilot.py"))
 with ZipFile(args.output,"x",ZIP_DEFLATED) as archive:
     for path in sorted(files):
         archive.write(path,path.relative_to(root))
