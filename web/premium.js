@@ -26,8 +26,10 @@ const opt=(name,val)=>e(name)+'="'+e(val)+'"';
 async function api(path,body){
  if(demo)return window.ritmDemo.api(path,body);
  let response;
- try{response=await fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});}
- catch{const err=Error('Нет связи с RITM. Проверь подключение и попробуй ещё раз.');err.networkDown=true;throw err;}
+ const controller=path==='/api/me'?new AbortController():null;
+ const timeout=controller?setTimeout(()=>controller.abort(),4500):null;
+ try{response=await fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:(controller?{signal:controller.signal}:{}));}
+ catch{const err=Error('Нет связи с RITM. Проверь подключение и попробуй ещё раз.');err.networkDown=true;throw err;}finally{clearTimeout(timeout);}
  const result=await response.json().catch(()=>null);
  if(!response.ok||!result)throw Error(result?.error||'Сервис временно недоступен. Попробуй ещё раз.');
  return result;
@@ -196,7 +198,7 @@ function pulse() {
   const event=incoming();
   const inviteTools='<div class="pulse-tools">'+b('Устроить дуэль','setup:duel','linebtn','swords')+
     b('Совместное время','together','linebtn','clock')+'</div>';
-  return head('Твой круг','PULSE')+(event?RitmHome.pulse(S,homeHelpers()):'')+choice.modeMenu()+spotlight('track','Арена · 7 дней','Выйдем на старт вместе?','Выберите каждый своё действие и сравните регулярность.','go:arena','Открыть Арену')+inviteTools+b('Настроить поддержку','context:social','textbtn')+
+  return '<header class="jr-cover jr-cover-pulse"><div>'+head('Твой круг','PULSE')+'</div></header>'+(event?RitmHome.pulse(S,homeHelpers()):'')+choice.modeMenu()+spotlight('track','Арена · 7 дней','Выйдем на старт вместе?','Выберите каждый своё действие и сравните регулярность.','go:arena','Открыть Арену')+inviteTools+b('Настроить поддержку','context:social','textbtn')+
     (groups||'<h2>Твой круг</h2>')+b(circles.length?'Создать ещё один круг':'Создать круг друзей','create:circle','textbtn','users')+
     (entries||circles.length?'<h2>Лента круга</h2>'+(entries||muted('Когда участник поделится делом, оно появится здесь.')):'')+
     '<div class="pulse-tools">'+b('Записать своё дело','action:move','linebtn','plus')+b('Приватность','go:privacy','linebtn','lock')+'</div>';

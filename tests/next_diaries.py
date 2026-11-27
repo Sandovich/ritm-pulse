@@ -1,5 +1,8 @@
 """Run against a synthetic pilot DB only. Pass the base URL and screenshot directory."""
 import sys
+import tempfile
+from contextlib import ExitStack
+from origin_outage import Origin
 from pathlib import Path
 from uuid import uuid4
 from playwright.sync_api import sync_playwright, expect
@@ -7,7 +10,10 @@ from choice_pilot import setup,click,capture,button
 
 base=sys.argv[1].rstrip('/')+'/'
 shots=Path(sys.argv[2])
-with sync_playwright() as p:
+with ExitStack() as resources, sync_playwright() as p:
+    outage=Origin(Path(resources.enter_context(tempfile.TemporaryDirectory()))/'journal.sqlite')
+    base=outage.start()
+    resources.callback(outage.stop)
     browser=getattr(p,sys.argv[3] if len(sys.argv)>3 else 'chromium').launch()
     a=browser.new_context(viewport={'width':390,'height':844},locale='ru-RU',is_mobile=True,has_touch=True)
     page=a.new_page()
@@ -20,23 +26,27 @@ with sync_playwright() as p:
     expect(button(page,'jr-set')).to_be_visible()
     expect(page.locator('#jr-name')).to_have_value('Упражнение из плана А')
     page.locator('#jr-kg').fill('12.5')
-    page.locator('#jr-reps').fill('8')
+    page.locator('#jr-reps').fill('7')
+    click(page,'jr-adjust:jr-reps:1')
+    expect(page.locator('#jr-reps')).to_have_value('8')
     click(page,'jr-set')
     page.wait_for_timeout(300)
     expect(page.locator('.journal-row')).to_have_count(1)
+    page.locator('#jr-kg').fill('0')
+    click(page,'jr-repeat:1')
+    expect(page.locator('#jr-kg')).to_have_value('12.5')
     page.evaluate('navigator.serviceWorker.ready')
     page.wait_for_function('!!navigator.serviceWorker.controller')
-    a.set_offline(True)
+    outage.stop()
     click(page,'jr-set')
     expect(button(page,'jr-sync')).to_be_visible()
-    if '--connected-reopen' not in sys.argv:
-        page.reload()
-        expect(button(page,'jr-sync')).to_be_visible()
-    a.set_offline(False)
-    if "--connected-reopen" in sys.argv:
-        expect(page.locator(".journal-row")).to_have_count(2)
-    else:
-        page.wait_for_function("!document.querySelector('#head')?.textContent.includes('без сети')")
+    page.close()
+    page=a.new_page()
+    page.goto(base)
+    expect(button(page,'jr-sync')).to_be_visible()
+    expect(page.locator('#head')).to_contain_text('без сети')
+    outage.start()
+    page.wait_for_function("!document.querySelector('#head')?.textContent.includes('без сети')")
     page.reload()
     click(page,'go:train')
     click(page,'go:journalTrain')
@@ -52,6 +62,7 @@ with sync_playwright() as p:
     click(page,'go:food')
     click(page,'go:journalFood')
     click(page,'jr-edit:new')
+    expect(page.get_by_role('dialog')).to_be_visible()
     for k,v in dict(name='Продукт с тестовой этикетки',grams='150',kcal='90',protein='4',fat='2',carbs='14').items():
         page.locator('#jr-'+k).fill(v)
     click(page,'jr-food-save')
@@ -61,6 +72,7 @@ with sync_playwright() as p:
     page.locator('#jr-grams').fill('200')
     click(page,'jr-food-save')
     expect(page.locator('.journal-count strong')).to_have_text('180')
+    page.evaluate('window.scrollTo(0,0)')
     capture(page,shots,'smart-food')
     click(page,'go:today')
     click(page,'go:journalStats')
@@ -72,6 +84,8 @@ with sync_playwright() as p:
     expect(page.locator('.journal-panel')).to_contain_text('12,5 кг')
     page.evaluate('window.scrollTo(0,0)')
     capture(page,shots,'analytics')
+    click(page,'go:store')
+    expect(page.locator('#content')).to_contain_text('DUO 28')
     b=browser.new_context()
     original=a.request.get(base+'api/me').json()['profile']['id']
     other=b.request.get(base+'api/me').json()
