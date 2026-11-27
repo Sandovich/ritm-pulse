@@ -60,3 +60,4 @@ body .ref-meter small,body .ref-bars span{color:#b9bcc1}
 body .screen .ref-meter>span:first-child{color:#e2e3e4;font-weight:550}
 body #nav button.pulse-nav svg.i{border-radius:50%;background:#d5fc53;box-shadow:0 0 0 4px #d5fc53;color:#151713}
 body #nav button:focus-visible,body button.ref-picker:focus-visible{outline:2px solid #d5fc53;outline-offset:-2px}
+body[data-screen="train"] .screen .ath-tabs{margin-block:16px;gap:8px}
