@@ -71,7 +71,10 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--library-only", action="store_true")
     args=parser.parse_args()
-    args.output.mkdir(parents=True,exist_ok=True)
+    args.output = args.output.resolve()
+    if args.output.is_relative_to(root.resolve()) or args.output.exists():
+        parser.error("Use a new output directory outside web/ to preserve reference images")
+    args.output.mkdir(parents=True)
     pages={"library":"/assets/refined-ui/library.html"}
     if not args.library_only:
         for screen in ("today","train","programs"):
