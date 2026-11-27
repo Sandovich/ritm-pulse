@@ -75,6 +75,7 @@ def real(browser, base, shots, opts):
     snapshot = owner.request.get(base+'api/me').json()
     assert len(snapshot['choices']) == 2 and all(c['completed'] for c in snapshot['choices'])
     a.goto(base)
+    click(a,'go:pulse')
     click(a,'go:arena')
     click(a,'setup:duel')
     reward='Победитель выбирает фильм'

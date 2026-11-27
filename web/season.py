@@ -8,6 +8,8 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 OFFERS = {
+    'NUTRI': ('Личный нутрициолог', 12900, 1),
+    'TRAIN': ('Личный тренер', 4990, 1),
     'FOOD': ('Питание на 28 дней', 2490, 1),
     'RESET': ('28 дней изменений', 3490, 1),
     'DUO': ('Сезон для двоих', 5490, 2),
@@ -47,9 +49,12 @@ def state(c,p,t):
     b=c.execute('SELECT ref,sku,price,seats FROM bookings WHERE person=?',(p,)).fetchone()
     result={'allocation':dict(v) if v else None,'booking':dict(b) if b else None,'season':None}
     if b:
+        paid, refunded = c.execute("""SELECT COALESCE(SUM(CASE WHEN kind='paid' THEN kopeks END),0),
+            COALESCE(SUM(CASE WHEN kind='refund' THEN kopeks END),0) FROM receipts WHERE ref=? AND at<=?""",(b['ref'],t)).fetchone()
+        result['booking'].update(paid_kopeks=paid, refunded_kopeks=refunded)
         url=os.getenv('RITM_'+b['sku']+'_CHECKOUT','').strip()
         link=urlsplit(url)
-        if b['price']==OFFERS[b['sku']][1] and link.scheme=='https' and link.hostname and not link.username and not link.password:
+        if not paid and b['price']==OFFERS[b['sku']][1] and link.scheme=='https' and link.hostname and not link.username and not link.password:
             result['booking']['checkout']=url
     if not row:return result
     plan=json.loads(row['plan']);focus=plan['focus']; start=row['started']
@@ -66,7 +71,7 @@ def operate(c,p,verb,data,t):
         if not c.execute('SELECT 1 FROM visitors WHERE person=?',(p,)).fetchone():
             channel=data.get('channel','direct')
             if channel not in ('direct','coach','artem','friend'):channel='direct'
-            c.execute('INSERT INTO visitors VALUES(?,?,?,?,?)',(p,secrets.choice(('benefit','pulse')),','.join(secrets.choice(list(itertools.permutations(OFFERS)))),channel,t))
+            c.execute('INSERT INTO visitors VALUES(?,?,?,?,?)',(p,secrets.choice(('benefit','pulse')),','.join(secrets.choice(list(itertools.permutations(('FOOD','RESET','DUO'))))),channel,t))
         if verb=='allocate':return {}
         c.execute('INSERT OR IGNORE INTO exposures VALUES(?,?,?)',(p,step,t));return {}
     if verb=='book':

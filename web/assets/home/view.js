@@ -5,7 +5,7 @@ window.RitmHome = (() => {
   });
   const weekLabels = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
   const words = {move:"тренировка", walk:"прогулка", food:"питание"};
-  const image = (name, className="") => '<img class="'+className+'" src="assets/home/'+name+'.webp?v=system1" alt="" draggable="false">';
+  const image = (name, className="") => '<img class="'+className+'" src="assets/home/'+name+'-small.webp?v=1" alt="" draggable="false">';
   const calendarDay = iso => new Date(iso+"T12:00:00Z");
   function week(s, weekly) {
     if (s.season || !s.home_plan?.length) {
@@ -37,7 +37,7 @@ window.RitmHome = (() => {
   }
   function header(s, {I,e,demo}) {
     return '<div class="home-brand"><button data-a="go:today" aria-label="Сегодня, RITM" class="home-wordmark">ritm.</button>'+
-      (demo?'<button class="home-demo" data-a="demomenu" aria-label="Настройки демонстрации">демо</button>':'')+
+      (demo?'<button class="home-demo" data-a="demomenu" aria-label="Настройки демонстрации">Premium Athletic</button>':'')+
       '</div><div class="home-tools"><button class="home-icon" data-a="go:notifications" aria-label="Уведомления">'+I('bell',21)+'</button>'+
       '<button class="home-avatar-button" data-a="go:profile" aria-label="Мой профиль"><span class="user-photo">'+portrait({person:s.profile.id,name:s.profile.name},demo,e)+'</span></button></div>';
   }
@@ -87,7 +87,10 @@ window.RitmHome = (() => {
     const {time,dinner}=helpers;
     const date=calendarDay(s.day).toLocaleDateString('ru-RU',{weekday:'short',timeZone:'UTC'}).toUpperCase()+' / '+calendarDay(s.day).toLocaleDateString('ru-RU',{month:'short',day:'numeric',timeZone:'UTC'}).replace(/\.$/,'').toUpperCase();
     const foodTime=dinner?dinner.mins+' мин':'Выбрать продукты';
-    return '<div class="home-content"><div class="home-title"><time datetime="'+s.day+'">'+date+'</time><h1>В своём ритме.</h1></div>'+summary(s,helpers)+circle(s,helpers)+pulse(s,helpers)+'<section class="home-agenda"><div class="agenda-top"><h2>Сегодня</h2><button class="quick-time" data-a="quicktime" aria-label="Выбрать доступное время, '+time+' минут">'+helpers.I('clock',14)+' '+time+' мин '+helpers.I('chevron-down',13)+'</button></div>'+row('01 / FOOD','Ужин по твоему плану',foodTime,'dinner','go:food',helpers)+row('02 / TRAIN','Сила и движение',time+' мин','training','go:train',helpers)+'</section></div>';
+    return '<div class="home-content"><div class="home-title"><time datetime="'+s.day+'">'+date+'</time><h1>В своём ритме.</h1></div>'+helpers.personal+summary(s,helpers)+
+      '<section class="home-agenda"><div class="agenda-top"><h2>План на сегодня</h2><button class="quick-time" data-a="quicktime" aria-label="Изменить доступное время">'+time+' мин '+helpers.I('chevron-down',14)+'</button></div>'+
+      row('Тренировки','Выбрать занятие',time+' мин','training','go:train',helpers)+row('Питание',dinner?dinner.name:'Выбрать ужин',foodTime,'dinner','go:food',helpers)+'</section>'+
+      (people(s).length?pulse(s,helpers)+circle(s,helpers):'<button class="linebtn full" data-a="go:pulse">Пригласить друга</button>')+'</div>';
   }
   return {header,render,people,relative,week,ring,summary,pulse,portrait};
 })();

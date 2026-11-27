@@ -31,3 +31,30 @@ self.addEventListener('notificationclick', event => {
   await clients.openWindow(url.href);
  })());
 });
+/* The offline cache contains only the app shell. Private API responses stay out. */
+const shellCache='ritm-athletic-shell-1';
+self.addEventListener('install',event=>event.waitUntil((async()=>{
+  const root=new URL('./',self.registration.scope);
+  const response=await fetch(root,{cache:'reload'});
+  if(!response.ok)throw Error('Shell unavailable');
+  const html=await response.clone().text();
+  const files=Array.from(html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="([^"]+)"/g),m=>new URL(m[1],root)).filter(u=>u.origin===root.origin);
+  const cache=await caches.open(shellCache);
+  await cache.addAll([...new Set(files.map(u=>u.href))]);
+  await cache.put(root,response);
+  await self.skipWaiting();
+})()));
+self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
+self.addEventListener('fetch',event=>{
+  const u=new URL(event.request.url);
+  if(event.request.method!=='GET'||u.origin!==location.origin||u.pathname.startsWith('/api/'))return;
+  event.respondWith((async()=>{
+    try{return await fetch(event.request);}
+    catch(error){
+      const cache=await caches.open(shellCache);
+      const cached=await cache.match(u.pathname==='/'?new URL('./',self.registration.scope).href:event.request);
+      if(cached)return cached;
+      throw error;
+    }
+  })());
+});
