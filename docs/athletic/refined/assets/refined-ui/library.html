@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RITM · Проверка компонентов</title><link rel="stylesheet" href="../fonts.css"><link rel="stylesheet" href="ui.css">
+<body class="ra"><main class="shell screen">
+<h1>Компоненты RITM</h1>
+<section class="journal-panel"><h2>Действия</h2><button class="btn" id="open">Выбрать время</button><button class="linebtn" id="reset">Сбросить выбор</button><button class="btn" disabled>Недоступно</button><output id="value" aria-live="polite">Время не выбрано</output></section>
+<section class="journal-panel"><h2>Подход</h2><label>Рабочий вес, кг<input id="weight" type="number" value="0" step=".5" min="0"></label><div class="jr-adjust"><button class="linebtn" id="less" aria-label="Уменьшить вес">−</button><button class="linebtn" id="more" aria-label="Увеличить вес">+</button></div></section>
+<section class="journal-panel"><h2>Фильтр</h2><div class="segmented"><button aria-pressed="true">Все</button><button aria-pressed="false">В группе</button></div></section>
+<dialog id="sheet" class="ref-sheet" aria-labelledby="title"><h2 id="title">Доступное время</h2><form method="dialog"><button value="10 минут">10 минут</button><button value="30 минут">30 минут</button><button value="">Отмена</button></form></dialog>
+<section class="journal-panel"><h2>Запись в дневнике</h2><label>День<input type="date" value="2026-11-27"></label><table class="jr-table"><caption>Учебный подход</caption><thead><tr><th>№</th><th>Вес</th><th>Повторы</th></tr></thead><tbody><tr><td>1</td><td>12 кг</td><td>8</td></tr></tbody></table></section>
+<section class="journal-panel"><h2>Статус действия</h2><div class="chips" id="states"><button class="chip" data-status="Загрузка…">Загрузка</button><button class="chip" data-status="Сохранено">Успех</button><button class="chip" data-status="Связь прервана. Можно повторить.">Ошибка</button></div><output aria-live="polite" id="status">Выбери состояние</output></section>
+<section class="catalog-section"><h2>Обложка программы</h2><button class="ath-cover" id="offer"><img src="../edition/strength.webp" alt=""><span class="ath-copy"><small>Групповой сезон</small><strong>RESET LEAGUE</strong><span class="ath-price">28 дней<b>3 490 ₽</b></span></span></button></section>
+<section class="journal-panel"><h2>Действие участника</h2><div class="person"><span class="edition-face"><img src="../home/lena-small.webp" alt=""></span><span>Учебный профиль</span></div><button class="linebtn" id="confirm">Подтвердить действие</button></section>
+<dialog id="detail" aria-labelledby="detail-title"><h2 id="detail-title"></h2><p id="message"></p><form method="dialog"><button class="linebtn">Закрыть</button></form></dialog>
+</main><script>
+const find=id=>document.getElementById(id), sheet=find('sheet'), weight=find('weight');
+find('open').onclick=()=>{sheet.returnValue='';sheet.showModal()};
+sheet.onclose=()=>{if(sheet.returnValue)find('value').value=sheet.returnValue};
+find('reset').onclick=()=>find('value').value='Время не выбрано';
+find('more').onclick=()=>weight.stepUp();find('less').onclick=()=>weight.stepDown();
+document.querySelector('.segmented').onclick=e=>{if(e.target.tagName==='BUTTON')for(const b of e.currentTarget.children)b.setAttribute('aria-pressed',String(b===e.target))};
+find('states').onclick=e=>{if(e.target.dataset.status)find('status').value=e.target.dataset.status};
+function detail(title,message){find('detail-title').textContent=title;find('message').textContent=message;find('detail').showModal()}
+find('offer').onclick=()=>detail('RESET LEAGUE','28 дней с тренером и нутрициологом. Учебный просмотр карточки.');
+find('confirm').onclick=()=>detail('Подтверждение','Пример панели подтверждения. Данные профиля здесь не записываются.');
+</script></body></html>

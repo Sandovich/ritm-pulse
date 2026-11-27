@@ -1,0 +1,84 @@
+﻿/* Shared Premium Athletic component tokens and mobile layout. */
+:root,html body{
+ --bg:#101113;--low:#191a1d;--card:#1b1d20;--surface:#1b1d20;--elevated:#292c31;
+ --ink:#f5f6f2;--text:#f5f6f2;--lime:#d5fc53;--accent:#d5fc53;
+ --muted:#b4b6ba;--quiet:#b4b6ba;--line:#383b40;--divider:#383b40;--club-radius:20px;
+ color:var(--ink);background:var(--bg);font-size:16px;line-height:1.45;
+}
+body #head,body #nav{background:#101113f5}
+body .home-brand,body .home-tools,body .screen .person,body button:has(>svg.i){display:inline-flex;align-items:center;gap:10px}
+body .home-brand{gap:12px;flex-wrap:wrap}
+body #head .home-demo{font-size:12px;min-height:44px;color:var(--muted);letter-spacing:.01em}
+body .home-tools button,body button.home-icon,body .home-avatar-button,body button.iconbtn{min-width:44px;min-height:44px}
+body svg.i{width:22px!important;height:22px!important;stroke-width:1.85}
+body #content{padding-inline:max(18px,env(safe-area-inset-left)) max(18px,env(safe-area-inset-right))}
+body .screen h1{font-size:clamp(28px,7.5vw,40px);line-height:1.12;letter-spacing:-.035em}
+body .screen h2{font-size:21px;line-height:1.24;letter-spacing:-.025em;margin:20px 0 12px}
+body .screen small,body .screen .cap,body .screen .muted,body .screen .safe{font-size:13px;line-height:1.45}
+body .screen .cap{letter-spacing:.045em}
+body .screen .btn,body .screen .linebtn,body .screen .chip,body .home-sheet button{min-height:44px;min-width:44px;gap:10px}
+body .screen .btn,body .screen .linebtn{border-radius:16px;font-size:15px}
+body .screen .btn{min-height:48px}
+body .screen .card,body .screen .club-cover,body .screen button.ath-cover,body .screen .jr-cover,body .screen .picture,
+body .screen .journal-panel,body .screen .social-group,body .screen .catalog-item,body .screen .profile-plan,body .screen .stat-pair>*,body .screen .workhero{border-radius:20px;overflow:hidden}
+body .screen .journal-panel,body .screen .social-group,body .screen .profile-plan{background:var(--surface);border:1px solid #ffffff0f}
+body .screen .choice,body .screen .edition-row,body .screen .item{gap:12px}
+body .screen .chip.on,body .screen [aria-pressed=true].chip{background:#d5fc5321;color:var(--lime);border-color:#d5fc5366}
+body #nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;padding-inline:4px;gap:0}
+body #nav button{min-width:0;min-height:58px;gap:8px;padding:5px 0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+body #nav button span{font-size:12px;line-height:1.2;letter-spacing:-.035em}
+body .ref-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+body .ref-meter{border:1px solid #ffffff08;border-radius:20px;min-width:0;padding:14px;background:var(--surface);text-align:left;display:flex;flex-direction:column;align-items:stretch;gap:10px}
+.ref-meter>span:first-child{display:flex;align-items:center;justify-content:space-between;font-size:14px;color:#d2d3d5}
+.ref-meter i{font-style:normal;color:var(--lime)}
+body .ref-meter small{color:var(--muted);margin-top:auto}
+.ref-ring{width:88px;height:88px;align-self:center;display:grid;place-items:center;border-radius:50%;background:conic-gradient(var(--lime) var(--fill),#373a3e 0);position:relative}
+.ref-ring:before{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--surface)}
+.ref-ring b{z-index:1;font-size:24px;letter-spacing:-.05em}
+.ref-kcal{font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.ref-bars{display:grid;gap:3px}.ref-bars span{display:grid;grid-template-columns:13px 1fr;align-items:center;font-size:12px;gap:6px;color:var(--muted)}
+.ref-bars em{height:5px;border-radius:5px;background:linear-gradient(to right,var(--tone) var(--fill),#373a3e var(--fill))}
+body .screen .ref-plan{width:100%;display:block;padding:0;overflow:hidden;text-align:left;background:var(--surface);border-radius:20px}
+.ref-plan img{width:100%;height:clamp(142px,39vw,220px);display:block;object-fit:cover;object-position:center 44%}
+.ref-plan>span{padding:14px 16px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px}
+.ref-plan small,.ref-plan strong,.ref-plan em{grid-column:1}.ref-plan small{color:var(--lime)}.ref-plan strong{font-size:21px}.ref-plan em{font-size:14px;font-style:normal;color:var(--muted)}.ref-play{grid-column:2;grid-row:1/4;width:44px;height:44px;display:grid;place-items:center;color:#121410;background:var(--lime);border-radius:50%}
+body .screen .club-social{background:#232a1d;border-radius:18px;min-height:64px;padding:14px;margin:14px 0}
+body .screen .stat-pair>button{display:grid;text-align:left;padding:16px;align-content:center;gap:5px;background:var(--surface)}.stat-pair strong{font-size:28px}
+body button.ref-picker{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;background:var(--elevated);border:1px solid #ffffff14;border-radius:14px;padding:10px 14px;text-align:left;color:var(--ink)}
+body select[data-ref-picker]{display:none!important}
+.ref-sheet{position:fixed;inset:auto 0 0;width:min(100%,520px);max-height:82dvh;overflow:auto;margin:0 auto;padding:18px 18px max(20px,env(safe-area-inset-bottom));border:1px solid #42454a;border-radius:24px 24px 0 0;background:#1b1d20;color:#f5f6f2}
+.ref-sheet::backdrop{background:#0009}.ref-sheet h2{margin:4px 0 14px;font-size:21px}.ref-sheet button{display:block;width:100%;text-align:left;min-height:48px;padding:10px 12px;border-radius:12px}.ref-sheet button[aria-pressed=true]{background:#d5fc531a;color:#d5fc53}
+@media(prefers-reduced-motion:no-preference){.ref-sheet[open]{animation:ritm-rise .18s ease-out}.ref-plan:active,.ref-meter:active{transform:scale(.985)}@keyframes ritm-rise{from{transform:translateY(16px);opacity:.6}to{transform:none;opacity:1}}}
+@media(max-width:380px){body #content{padding-inline:16px}body #nav button span{font-size:12px;letter-spacing:-.055em}}
+/* Use the platform text face for small controls and Cyrillic at every system size. */
+html body,body .shell,body .shell button,body .shell input,body .shell textarea,body dialog{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body .screen h1,body .ref-plan strong,body .ref-kcal,body .ref-ring b,body #head .home-wordmark{font-weight:720}
+body .screen h2{font-weight:650}
+body.home-active #head .home-demo{font-size:12px;letter-spacing:0;color:#b7babe}
+body .screen .ref-meter,body .screen .ref-plan,body .screen .journal-panel{background-color:#1b1d20}
+body .ref-meter small,body .ref-bars span{color:#b9bcc1}
+body .screen .ref-meter>span:first-child{color:#e2e3e4;font-weight:550}
+body #nav button.pulse-nav,body.home-active #nav button.pulse-nav{gap:8px!important}
+body #nav button.pulse-nav svg.i,body #nav button.pulse-nav:not(.active) svg.i{width:22px!important;height:22px!important;padding:0;background:transparent;color:inherit;border-radius:0;box-shadow:none}
+body #nav button:focus-visible,body button.ref-picker:focus-visible{outline:2px solid #d5fc53;outline-offset:-2px}
+body[data-screen="train"] .screen .ath-tabs{margin-block:16px;gap:8px}
+body[data-screen="profile"] .profile-plan .home-week{padding:20px;gap:16px;border:0}.profile-plan .home-week .week-values{flex:1;min-width:0}.profile-plan .home-week .home-ring{flex:0 0 auto;width:clamp(70px,19vw,88px);height:auto}
+
+/* Shared insets for the two compact catalog formats and the circle roster. */
+.screen :is(.ath-options,.ath-experts) .catalog-item.program-row {
+  display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start;
+  background:var(--surface); border:1px solid #ffffff12; padding:0; gap:0;
+}
+.screen :is(.ath-options,.ath-experts) .catalog-item.program-row img.catalog-photo {
+  display:block; width:100%; height:clamp(84px,24vw,106px); object-fit:cover; border-radius:0;
+}
+.screen :is(.ath-options,.ath-experts) .catalog-item.program-row > span {
+  box-sizing:border-box; width:100%; flex:1; display:flex; flex-direction:column;
+  align-items:flex-start; gap:8px; padding:14px; overflow-wrap:anywhere;
+}
+.screen :is(.ath-options,.ath-experts) .catalog-item.program-row > span > b {margin-top:auto}
+body .screen .social-group {padding:14px 16px 16px}
+.social-group .between {min-height:44px;margin-bottom:10px}
+.social-group .circle-faces {display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:10px 6px}
+.social-group .circle-faces button {gap:5px;align-content:start}
+.social-group .circle-faces small {font-size:12px}
