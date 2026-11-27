@@ -58,7 +58,8 @@ body.home-active #head .home-demo{font-size:12px;letter-spacing:0;color:#b7babe}
 body .screen .ref-meter,body .screen .ref-plan,body .screen .journal-panel{background-color:#1b1d20}
 body .ref-meter small,body .ref-bars span{color:#b9bcc1}
 body .screen .ref-meter>span:first-child{color:#e2e3e4;font-weight:550}
-body #nav button.pulse-nav svg.i{border-radius:50%;background:#d5fc53;box-shadow:0 0 0 4px #d5fc53;color:#151713}
+body #nav button.pulse-nav,body.home-active #nav button.pulse-nav{gap:8px!important}
+body #nav button.pulse-nav svg.i,body #nav button.pulse-nav:not(.active) svg.i{width:22px!important;height:22px!important;padding:0;background:transparent;color:inherit;border-radius:0;box-shadow:none}
 body #nav button:focus-visible,body button.ref-picker:focus-visible{outline:2px solid #d5fc53;outline-offset:-2px}
 body[data-screen="train"] .screen .ath-tabs{margin-block:16px;gap:8px}
 body[data-screen="profile"] .profile-plan .home-week{padding:20px;gap:16px;border:0}.profile-plan .home-week .week-values{flex:1;min-width:0}.profile-plan .home-week .home-ring{flex:0 0 auto;width:clamp(70px,19vw,88px);height:auto}
