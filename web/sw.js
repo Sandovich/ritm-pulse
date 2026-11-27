@@ -32,7 +32,7 @@ self.addEventListener('notificationclick', event => {
  })());
 });
 /* The offline cache contains only the app shell. Private API responses stay out. */
-const shellCache='ritm-athletic-shell-3';
+const shellCache='ritm-athletic-shell-3a';
 self.addEventListener('install',event=>event.waitUntil((async()=>{
   const root=new URL('./',self.registration.scope);
   const response=await fetch(root,{cache:'reload'});
