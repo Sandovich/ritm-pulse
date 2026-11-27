@@ -63,3 +63,22 @@ body #nav button.pulse-nav svg.i,body #nav button.pulse-nav:not(.active) svg.i{w
 body #nav button:focus-visible,body button.ref-picker:focus-visible{outline:2px solid #d5fc53;outline-offset:-2px}
 body[data-screen="train"] .screen .ath-tabs{margin-block:16px;gap:8px}
 body[data-screen="profile"] .profile-plan .home-week{padding:20px;gap:16px;border:0}.profile-plan .home-week .week-values{flex:1;min-width:0}.profile-plan .home-week .home-ring{flex:0 0 auto;width:clamp(70px,19vw,88px);height:auto}
+
+/* Shared insets for the two compact catalog formats and the circle roster. */
+.screen :is(.ath-options,.ath-experts) .catalog-item.program-row {
+  display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start;
+  background:var(--surface); border:1px solid #ffffff12; padding:0; gap:0;
+}
+.screen :is(.ath-options,.ath-experts) .catalog-item.program-row img.catalog-photo {
+  display:block; width:100%; height:clamp(84px,24vw,106px); object-fit:cover; border-radius:0;
+}
+.screen :is(.ath-options,.ath-experts) .catalog-item.program-row > span {
+  box-sizing:border-box; width:100%; flex:1; display:flex; flex-direction:column;
+  align-items:flex-start; gap:8px; padding:14px; overflow-wrap:anywhere;
+}
+.screen :is(.ath-options,.ath-experts) .catalog-item.program-row > span > b {margin-top:auto}
+body .screen .social-group {padding:14px 16px 16px}
+.social-group .between {min-height:44px;margin-bottom:10px}
+.social-group .circle-faces {display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:10px 6px}
+.social-group .circle-faces button {gap:5px;align-content:start}
+.social-group .circle-faces small {font-size:12px}
