@@ -1,0 +1,6 @@
+{
+  "name":"ritm-visual-qa",
+  "private":true,
+  "type":"module",
+  "dependencies":{"axe-core":"4.14.0","pixelmatch":"7.1.0","pngjs":"7.0.0"}
+}

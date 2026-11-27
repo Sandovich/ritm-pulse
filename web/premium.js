@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const $=s=>document.querySelector(s),e=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const I=(n,size=22)=>'<svg class="i" style="width:'+size+'px;height:'+size+'px" aria-hidden="true" viewBox="0 0 24 24">'+(iconShapes[n]||iconShapes.activity)+'</svg>';
+const I=ritmIcon;
 const b=(txt,id,cls='btn',ic='')=>'<button type="button" class="'+cls+'" data-a="'+e(id)+'">'+(ic?I(ic,18):'')+e(txt)+'</button>';
 const ib=(ic,id,l)=>'<button type="button" class="iconbtn" data-a="'+e(id)+'" aria-label="'+e(l)+'">'+I(ic)+'</button>';
 const photo=(key,alt='',cls='')=>'<img class="'+cls+'" src="assets/'+key+'.webp" alt="'+e(alt)+'" decoding="async">';
