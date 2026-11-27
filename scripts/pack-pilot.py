@@ -7,7 +7,7 @@ root=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser()
 parser.add_argument("output",type=Path)
 args=parser.parse_args()
-files=[root/name for name in ("PILOT-NEXT.md","ASSETS.md","requirements-pilot-tests.txt")]
+files=[root/name for name in ("PILOT-NEXT.md","ASSETS.md","DESIGN.md","requirements-pilot-tests.txt")]
 files.extend((root/"web").glob("*.py"))
 for suffix in ("html","js","css","webmanifest","png"):
     files.extend((root/"web").glob("*."+suffix))

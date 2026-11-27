@@ -106,11 +106,17 @@ function today(){
  const next=food?helpers.dinner:w;
  const selected=next && (!food||next.mins<=time);
  const date=new Date(S.day+'T12:00:00Z').toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
- const main=selected?spotlight(next.pic,food?'Ужин на сегодня':'Тренировка на сегодня',food?next.name:next.title,(food?next.mins:Math.min(time,next.mins))+' мин',food?'meal:'+next.id:'work:'+next.id,food?'Открыть рецепт':'Открыть занятие'):b('Выбрать блюдо под свой день','go:food','btn full');
- return head('Твой день. Твой ритм.',date)+helpers.personal+b('Мой прогресс','go:journalStats','textbtn')+
- '<button class="club-week home-week" data-a="homeplan"><span><strong>'+ (week.total?'Твоя неделя':'Начни с одного дела')+'</strong><small>'+ (week.total?week.total+' из '+week.target+' дней':'Первая отметка появится после занятия или ужина')+'</small></span><span class="club-days">'+week.counts.map((x,i)=>'<i class="'+(x?'done':'')+'">'+['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][i]+'</i>').join('')+'</span></button>'+
- '<div class="between"><h2>Следующий шаг</h2>'+b(time+' мин','quicktime','chip','clock')+'</div>'+main+b(food?'Вместо ужина — выбрать тренировку':'Вместо тренировки — выбрать ужин',food?'go:train':'go:food','textbtn full')+
- (incoming()?RitmHome.pulse(S,helpers):b('Бросить другу вызов на неделю','setup:duel','club-social full','swords'))+
+ const progress=RitmHome.week(S,weekly),entries=(S.food_log||[]).filter(item=>item.day===S.day);
+ const nutrients=['kcal','protein','fat','carbs'].map(k=>entries.reduce((sum,row)=>sum+row[k]*row.grams/100,0));
+ const energy=[nutrients[1]*4,nutrients[2]*9,nutrients[3]*4],total=energy.reduce((a,b)=>a+b,0);
+ const bars=energy.map((n,i)=>'<span>'+['Б','Ж','У'][i]+'<em style="--fill:'+Math.round(total?100*n/total:0)+'%;--tone:'+['#d5fc53','#daa883','#9fb4d0'][i]+'"></em></span>').join('');
+ const metrics='<div class="ref-metrics"><button class="ref-meter" data-a="homeplan"><span>Твоя активность<i>↗</i></span><span class="ref-ring" style="--fill:'+Math.min(100,progress.percent)+'%"><b>'+progress.percent+'%</b></span><small>'+e(progress.caption)+'</small></button>'+
+ '<button class="ref-meter" data-a="go:journalFood"><span>Питание<i>↗</i></span><b class="ref-kcal">'+Math.round(nutrients[0]).toLocaleString('ru-RU')+'</b><small>ккал в дневнике</small><span class="ref-bars">'+bars+'</span><small>'+(entries.length?'Состав по энергии':'Записать еду')+'</small></button></div>';
+ const action=food?'meal:'+next?.id:'work:'+next?.id;
+ const main=selected?'<button class="ref-plan" data-a="'+e(action)+'">'+photo(next.pic)+'<span><small>'+(food?'ТВОЙ УЖИН':'ТВОЯ ТРЕНИРОВКА')+'</small><strong>'+e(food?next.name:next.title)+'</strong><em>'+e(food?'Приготовление':next.gear)+' · '+(food?next.mins:Math.min(time,next.mins))+' мин</em><i class="ref-play">'+I(food?'arrow-up-right':'circle-play')+'</i></span></button>':b('Выбрать блюдо','go:food','btn full');
+ return head('Время для себя.',date)+metrics+'<div class="between"><h2>Продолжай свой план</h2>'+b(time+' мин','quicktime','chip','clock')+'</div>'+main+
+ (incoming()?RitmHome.pulse(S,helpers):b('Пригласить друга на неделю','setup:duel','club-social full','users'))+
+ helpers.personal+b('Мой прогресс','go:journalStats','linebtn full','activity')+b(food?'Выбрать тренировку':'Выбрать ужин',food?'go:train':'go:food','textbtn full')+
  (S.booking?.paid_kopeks>S.booking?.refunded_kopeks?'':expertRow(food?'food':'train'));
 }
 function homeSheet(title,body) {
@@ -462,7 +468,7 @@ function profile() {
   if(demo)links.unshift(['season-story','Твоя история сезонов','trophy']);
   if(demo&&seatActive())links.unshift(['league-support','Мой RESET LEAGUE','users']);
   return head(S.profile.name||'Мой профиль','RITM PROFILE')+'<div class="profile-plan">'+RitmHome.summary(S,homeHelpers())+'</div>'+
-    '<div class="stat-pair">'+[['Тренировки',hist.filter(x=>x.kind==='move').length],['Дни питания',new Set(hist.filter(x=>x.kind==='food').map(x=>x.day)).size]].map(([k,n])=>'<div>'+label(k)+'<strong>'+n+'</strong><small>За последние 8 недель</small></div>').join('')+'</div>'+
+    '<div class="stat-pair">'+[['Тренировки',hist.filter(x=>x.kind==='move').length],['Дни питания',new Set(hist.filter(x=>x.kind==='food').map(x=>x.day)).size]].map(([k,n],i)=>'<button data-a="go:'+(i?'journalFood':'journalStats')+'">'+I(i?'utensils':'activity')+label(k)+'<strong>'+n+'</strong><small>За последние 8 недель</small></button>').join('')+'</div>'+
     (personalOffer(S.booking?.sku)?b('Моя заявка · '+Catalog[S.booking.sku].title.toLowerCase(),'product:'+S.booking.sku,'linebtn full',S.booking.sku==='TRAIN'?'dumbbell':'utensils'):'')+
     (S.season?muted('Твой сезон · день '+S.season.day+' из 28'):'')+'<div class="profile-links">'+links.map(([k,t,i])=>'<button class="choice" data-a="go:'+k+'"><span class="person">'+I(i,19)+t+'</span>'+I('chevron-right',16)+'</button>').join('')+'</div>';
 }
