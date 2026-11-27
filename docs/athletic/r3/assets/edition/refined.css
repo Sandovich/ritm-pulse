@@ -50,3 +50,13 @@ body select[data-ref-picker]{display:none!important}
 .ref-sheet::backdrop{background:#0009}.ref-sheet h2{margin:4px 0 14px;font-size:21px}.ref-sheet button{display:block;width:100%;text-align:left;min-height:48px;padding:10px 12px;border-radius:12px}.ref-sheet button[aria-pressed=true]{background:#d5fc531a;color:#d5fc53}
 @media(prefers-reduced-motion:no-preference){.ref-sheet[open]{animation:ritm-rise .18s ease-out}.ref-plan:active,.ref-meter:active{transform:scale(.985)}@keyframes ritm-rise{from{transform:translateY(16px);opacity:.6}to{transform:none;opacity:1}}}
 @media(max-width:380px){body #content{padding-inline:16px}body #nav button span{font-size:12px;letter-spacing:-.055em}}
+/* Use the platform text face for small controls and Cyrillic at every system size. */
+html body,body .shell,body .shell button,body .shell input,body .shell textarea,body dialog{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body .screen h1,body .ref-plan strong,body .ref-kcal,body .ref-ring b,body #head .home-wordmark{font-weight:720}
+body .screen h2{font-weight:650}
+body.home-active #head .home-demo{font-size:12px;letter-spacing:0;color:#b7babe}
+body .screen .ref-meter,body .screen .ref-plan,body .screen .journal-panel{background-color:#1b1d20}
+body .ref-meter small,body .ref-bars span{color:#b9bcc1}
+body .screen .ref-meter>span:first-child{color:#e2e3e4;font-weight:550}
+body #nav button.pulse-nav svg.i{border-radius:50%;background:#d5fc53;box-shadow:0 0 0 4px #d5fc53;color:#151713}
+body #nav button:focus-visible,body button.ref-picker:focus-visible{outline:2px solid #d5fc53;outline-offset:-2px}
